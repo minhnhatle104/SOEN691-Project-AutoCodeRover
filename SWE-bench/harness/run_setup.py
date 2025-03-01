@@ -13,18 +13,7 @@ from constants import (
     MAP_REPO_TO_INSTALL,
     MAP_VERSION_TO_INSTALL,
     MAP_REPO_TO_TEST_FRAMEWORK,
-    APPLY_PATCH_FAIL,
-    APPLY_PATCH_PASS,
-    INSTANCE_IMAGE_BUILD_DIR,
-    RUN_INSTANCE_LOG_DIR,
 )
-
-# from constants import (
-#     APPLY_PATCH_FAIL,
-#     APPLY_PATCH_PASS,
-#     INSTANCE_IMAGE_BUILD_DIR,
-#     RUN_INSTANCE_LOG_DIR,
-# )
 
 from context_manager import ExecWrapper
 from utils import (
@@ -406,7 +395,7 @@ def main(
 if __name__ == "__main__":
     script_dir = os.path.dirname(os.path.realpath(__file__))
     root_dir = os.path.dirname(script_dir)
-    # we always read from this file, so put this as a default instead of required
+    # # we always read from this file, so put this as a default instead of required
     # default_tasks_file = pjoin(
     #     root_dir, "data", "test-00000-of-00001-dc7762b94638c186.parquet"
     # )
