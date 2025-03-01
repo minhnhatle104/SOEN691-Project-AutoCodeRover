@@ -115,12 +115,19 @@ def create_conda_env(
         exec_wrapper(install_cmd, shell=True)
 
     # (2) get install information
+    logger.info(
+            f"Repo full: {repo_full}"
+    )
+
     repo_map_version_to_install = MAP_VERSION_TO_INSTALL[repo_full]
     # dict with key "python", "packages", "pip_packages", "install"
     install = repo_map_version_to_install[version]
 
     # (3) do the real work: consider different project setups
     pkgs = install["packages"] if "packages" in install else ""
+    logger.info(
+        f"packages: {pkgs} install: {install['packages']}"
+    )
     python_version = install["python"]
     # create a temp dir to save setup temp files
     temp_dir = pjoin(repo_path, "setup_temp")
@@ -135,7 +142,8 @@ def create_conda_env(
         path_to_reqs = get_requirements(instance, temp_dir)
         # Make sure to deactivate so that we can remove the environment.
         # This is necessary if we are running the setup script multiple times.
-        cmd = f"source {activate_path} {env_name} && echo 'activate successful' && python -m pip install -r {path_to_reqs} ; source {deactivate_path}"
+        # cmd = f"source {activate_path} {env_name} && echo 'activate successful' && python -m pip install -r {path_to_reqs} ; source {deactivate_path}"
+        cmd = f"call conda activate {env_name} && echo 'activate successful' && python -m pip install -r {path_to_reqs} && conda deactivate"
         logger.info(
             f"[{env_name}] Installing dependencies for {env_name}; Command: {cmd}"
         )
@@ -226,6 +234,9 @@ def setup_one_repo_version(
         env_name: name of the conda environment to create.
         task: Dict containing task instance.
     """
+    logger.info(
+        f" *** PRINT MINH LE:  {repo_full} {repo_path} ======="
+    )
     logger.info(
         f"[{env_name}] ======= Start setting up for {repo_full} {version} ======="
     )
