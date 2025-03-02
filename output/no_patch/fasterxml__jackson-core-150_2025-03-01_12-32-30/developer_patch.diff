@@ -1,0 +1,92 @@
+diff --git a/pom.xml b/pom.xml
+index fdcad1af99..b8be7cb38e 100644
+--- a/pom.xml
++++ b/pom.xml
+@@ -9,7 +9,7 @@
+   <groupId>com.fasterxml.jackson.core</groupId>
+   <artifactId>jackson-core</artifactId>
+   <name>Jackson-core</name>
+-  <version>2.4.2-SNAPSHOT</version>
++  <version>2.4.4-SNAPSHOT</version>
+   <packaging>bundle</packaging>
+   <description>Core Jackson abstractions, basic JSON streaming API implementation
+   </description>
+diff --git a/release-notes/VERSION b/release-notes/VERSION
+index 6d1f9a64e7..ee2047fbb3 100644
+--- a/release-notes/VERSION
++++ b/release-notes/VERSION
+@@ -1,20 +1,21 @@
+ Project: jackson-core
+-Version: 2.4.2 (xx-Aug-2014)
++Version: 2.4.3 (02-Oct-2014)
+ 
+-#146: Error while parsing negative floats at the end of the input buffer
+- (reported by rjmac@github)
++#152: Exception for property names longer than 256k
++ (reported by CrendKing@github)
++#157: ArrayIndexOutOfBoundsException: 200 on numbers with more than 200 digits.
++ (reported by Lars P, larsp@github)
+ 
+ ------------------------------------------------------------------------
+ === History: ===
+ ------------------------------------------------------------------------
+ 
+-2.4.1.1 (09-Jul-2014)
+-
+-NOTE: this is a "micro-release", which does NOT contain all versions of
+-components but only individual components with critical fix(es).
++2.4.2 (13-Aug-2014)
+ 
+ #145: NPE at BytesToNameCanonicalizer
+  (reported by Shay B)
++#146: Error while parsing negative floats at the end of the input buffer
++ (reported by rjmac@github)
+ 
+ 2.4.1 (16-Jun-2014)
+ 
+diff --git a/src/main/java/com/fasterxml/jackson/core/json/UTF8StreamJsonParser.java b/src/main/java/com/fasterxml/jackson/core/json/UTF8StreamJsonParser.java
+index 4d8067d45c..7a57233509 100644
+--- a/src/main/java/com/fasterxml/jackson/core/json/UTF8StreamJsonParser.java
++++ b/src/main/java/com/fasterxml/jackson/core/json/UTF8StreamJsonParser.java
+@@ -1189,17 +1189,17 @@ public Boolean nextBooleanValue() throws IOException
+     protected JsonToken _parsePosNumber(int c) throws IOException
+     {
+         char[] outBuf = _textBuffer.emptyAndGetCurrentSegment();
+-        int outPtr = 0;
+         // One special case: if first char is 0, must not be followed by a digit
+         if (c == INT_0) {
+             c = _verifyNoLeadingZeroes();
+         }
+         // Ok: we can first just add digit we saw first:
+-        outBuf[outPtr++] = (char) c;
++        outBuf[0] = (char) c;
+         int intLen = 1;
++        int outPtr = 1;
+         // And then figure out how far we can read without further checks
+         // for either input or output
+-        int end = _inputPtr + outBuf.length;
++        int end = _inputPtr + outBuf.length - 1; // 1 == outPtr
+         if (end > _inputEnd) {
+             end = _inputEnd;
+         }
+diff --git a/src/main/java/com/fasterxml/jackson/core/util/TextBuffer.java b/src/main/java/com/fasterxml/jackson/core/util/TextBuffer.java
+index 187754cd5d..a67737606b 100644
+--- a/src/main/java/com/fasterxml/jackson/core/util/TextBuffer.java
++++ b/src/main/java/com/fasterxml/jackson/core/util/TextBuffer.java
+@@ -580,10 +580,13 @@ public char[] finishCurrentSegment() {
+     public char[] expandCurrentSegment()
+     {
+         final char[] curr = _currentSegment;
+-        // Let's grow by 50%
++        // Let's grow by 50% by default
+         final int len = curr.length;
+-        // Must grow by at least 1 char, no matter what
+-        int newLen = (len == MAX_SEGMENT_LEN) ? (MAX_SEGMENT_LEN+1) : Math.min(MAX_SEGMENT_LEN, len + (len >> 1));
++        int newLen = len + (len >> 1);
++        // but above intended maximum, slow to increase by 25%
++        if (newLen > MAX_SEGMENT_LEN) {
++            newLen = len + (len >> 2);
++        }
+         return (_currentSegment = Arrays.copyOf(curr, newLen));
+     }
+ 

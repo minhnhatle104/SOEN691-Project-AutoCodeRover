@@ -1,0 +1,30 @@
+{
+    "task_id": "fasterxml__jackson-databind-2002",
+    "setup_info": {
+        "repo_path": "/Users/rabeyakhatunmuna/Documents/research/SOEN691-Project-AutoCodeRover/SWE-bench/testbed/fasterxml__jackson-databind/setup_fasterxml__jackson-databind__0.1",
+        "env_name": "setup_fasterxml__jackson-databind__0.1",
+        "pre_install": [],
+        "install": "mvn clean install -Dmaven.test.skip=true",
+        "test_cmd": "mvn clean test src/test/java/com/fasterxml/jackson/databind/introspect/IgnoredFieldPresentInCreatorProperty2001Test.java"
+    },
+    "task_info": {
+        "repo": "fasterxml/jackson-databind",
+        "pull_number": 2002,
+        "instance_id": "fasterxml__jackson-databind-2002",
+        "issue_numbers": [
+            "2001"
+        ],
+        "base_commit": "5c95315ffbaf6f64bd3a2970a001ecce51c10032",
+        "patch": "diff --git a/src/main/java/com/fasterxml/jackson/databind/introspect/POJOPropertiesCollector.java b/src/main/java/com/fasterxml/jackson/databind/introspect/POJOPropertiesCollector.java\nindex 0dc1bbefbd..4c799e554f 100644\n--- a/src/main/java/com/fasterxml/jackson/databind/introspect/POJOPropertiesCollector.java\n+++ b/src/main/java/com/fasterxml/jackson/databind/introspect/POJOPropertiesCollector.java\n@@ -822,6 +822,11 @@ protected void _renameProperties(Map<String, POJOPropertyBuilder> props)\n                 }\n                 // replace the creatorProperty too, if there is one\n                 _updateCreatorProperty(prop, _creatorProperties);\n+\n+                // New name of property was ignored previously - remove from ignored [#2001]\n+                if (_ignoredPropertyNames != null) {\n+                  _ignoredPropertyNames.remove(name);\n+                }\n             }\n         }\n     }\n",
+        "test_patch": "diff --git a/src/test/java/com/fasterxml/jackson/databind/introspect/IgnoredFieldPresentInCreatorProperty2001Test.java b/src/test/java/com/fasterxml/jackson/databind/introspect/IgnoredFieldPresentInCreatorProperty2001Test.java\nnew file mode 100644\nindex 0000000000..1ee5ba5bc3\n--- /dev/null\n+++ b/src/test/java/com/fasterxml/jackson/databind/introspect/IgnoredFieldPresentInCreatorProperty2001Test.java\n@@ -0,0 +1,32 @@\n+package com.fasterxml.jackson.databind.introspect;\n+\n+import com.fasterxml.jackson.annotation.JsonCreator;\n+import com.fasterxml.jackson.annotation.JsonIgnore;\n+import com.fasterxml.jackson.annotation.JsonProperty;\n+import com.fasterxml.jackson.databind.BaseMapTest;\n+import com.fasterxml.jackson.databind.ObjectMapper;\n+import org.junit.Test;\n+\n+import java.beans.ConstructorProperties;\n+import java.io.IOException;\n+\n+// Tests for [databind#2001]\n+public class IgnoredFieldPresentInCreatorProperty2001Test extends BaseMapTest {\n+\n+    static public class Foo {\n+\n+        @JsonIgnore\n+        public String query;\n+\n+        @JsonCreator\n+        @ConstructorProperties(\"rawQuery\")\n+        public Foo(@JsonProperty(\"query\") String rawQuery) {\n+        query = rawQuery;\n+      }\n+    }\n+\n+    public void testIgnoredFieldPresentInPropertyCreator() throws IOException {\n+        Foo deserialized = new ObjectMapper().readValue(\"{\\\"query\\\": \\\"bar\\\"}\", Foo.class);\n+        assertEquals(\"bar\", deserialized.query);\n+    }\n+}\n",
+        "problem_statement": "Deserialization issue with `@JsonIgnore` and `@JsonCreator` + `@JsonProperty` for same property name\nIssue originally found on jackson-module-kotlin: https://github.com/FasterXML/jackson-module-kotlin/issues/124. Issue reproducible with Java code.\r\n\r\nEntity class:\r\n```java\r\nstatic public class Foo {\r\n  @JsonIgnore \r\n  public String query;\r\n\r\n  @JsonCreator\r\n  @ConstructorProperties(\"rawQuery\")\r\n  public Foo(@JsonProperty(\"query\") String rawQuery) {\r\n    query = rawQuery;\r\n  }\r\n}\r\n```\r\n\r\nFails this test:\r\n```java\r\nFoo deserialized = new ObjectMapper().readValue(\"{\\\"query\\\": \\\"bar\\\"}\", Foo.class);\r\nassertEquals(\"bar\", deserialized.query);\r\n```\n",
+        "hints_text": "",
+        "created_at": 1524052398000,
+        "FAIL_TO_PASS": [
+            "src:com.fasterxml.jackson.databind.introspect.IgnoredFieldPresentInCreatorProperty2001Test"
+        ],
+        "PASS_TO_PASS": [],
+        "version": "0.1",
+        "pr_link": "https://github.com/fasterxml/jackson-databind/pull/2002"
+    }
+}

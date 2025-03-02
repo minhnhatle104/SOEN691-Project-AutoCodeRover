@@ -1,0 +1,20 @@
+Filter SPI Auto Load
+ExtensionLoader can not inject spring bean by type.
+ex: when I customize Filter， I wanna inject spring boot Environment bean, then will delegate SpringExtensionFactory lookup with getOptionalBean,  but getOptionalBean only can inject by type when parameter beanName is null.
+
+### Environment
+
+* Dubbo version: 2.7.8
+* Operating System version: MacOS 11.6
+* Java version: 1.8
+
+### Expected Behavior
+ExtensionLoader can inject spring bean by type. 
+
+Possible Solutions:
+A: To annotate the setter method inject by type.
+B: DubboBeanUtils#getOptionalBean by name, attempt to set null to beanName  if not found !
+
+### Actual Behavior
+
+ExtensionLoader can not inject spring bean by type.

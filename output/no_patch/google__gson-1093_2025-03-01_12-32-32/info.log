@@ -1,0 +1,124 @@
+2025-03-01 12:32:32.655 | ERROR    | [Errno 2] No such file or directory: '/Users/rabeyakhatunmuna/Documents/research/SOEN691-Project-AutoCodeRover/SWE-bench/testbed/google__gson/setup_google__gson__0.1'
+Traceback (most recent call last):
+
+  File "/Users/rabeyakhatunmuna/Documents/research/SOEN691-Project-AutoCodeRover/auto-code-rover/app/main.py", line 656, in <module>
+    main()
+    └ <function main at 0x104a99fc0>
+
+  File "/Users/rabeyakhatunmuna/Documents/research/SOEN691-Project-AutoCodeRover/auto-code-rover/app/main.py", line 120, in main
+    run_task_groups(groups, num_processes, organize_output=True)
+    │               │       └ 1
+    │               └ {'setup_apache__dubbo__0.1': [<app.raw_tasks.RawSweTask object at 0x126abb910>, <app.raw_tasks.RawSweTask object at 0x126abba...
+    └ <function run_task_groups at 0x126aeb2e0>
+
+  File "/Users/rabeyakhatunmuna/Documents/research/SOEN691-Project-AutoCodeRover/auto-code-rover/app/main.py", line 396, in run_task_groups
+    run_tasks_serial(all_tasks)
+    │                └ [<app.raw_tasks.RawSweTask object at 0x126abb910>, <app.raw_tasks.RawSweTask object at 0x126abba30>, <app.raw_tasks.RawSweTas...
+    └ <function run_tasks_serial at 0x126aeb370>
+
+  File "/Users/rabeyakhatunmuna/Documents/research/SOEN691-Project-AutoCodeRover/auto-code-rover/app/main.py", line 414, in run_tasks_serial
+    run_task_in_subprocess(task)
+    │                      └ <app.raw_tasks.RawSweTask object at 0x126ac3eb0>
+    └ <function run_task_in_subprocess at 0x126aeb520>
+
+  File "/Users/rabeyakhatunmuna/Documents/research/SOEN691-Project-AutoCodeRover/auto-code-rover/app/main.py", line 462, in run_task_in_subprocess
+    executor.submit(run_raw_task, task)
+    │        │      │             └ <app.raw_tasks.RawSweTask object at 0x126ac3eb0>
+    │        │      └ <function run_raw_task at 0x126aeb5b0>
+    │        └ <function ProcessPoolExecutor.submit at 0x1059131c0>
+    └ <concurrent.futures.process.ProcessPoolExecutor object at 0x126abb790>
+
+  File "/Users/rabeyakhatunmuna/.pyenv/versions/3.10.10/lib/python3.10/concurrent/futures/process.py", line 733, in submit
+    self._start_executor_manager_thread()
+    │    └ <function ProcessPoolExecutor._start_executor_manager_thread at 0x105912f80>
+    └ <concurrent.futures.process.ProcessPoolExecutor object at 0x126abb790>
+  File "/Users/rabeyakhatunmuna/.pyenv/versions/3.10.10/lib/python3.10/concurrent/futures/process.py", line 673, in _start_executor_manager_thread
+    self._launch_processes()
+    │    └ <function ProcessPoolExecutor._launch_processes at 0x1059130a0>
+    └ <concurrent.futures.process.ProcessPoolExecutor object at 0x126abb790>
+  File "/Users/rabeyakhatunmuna/.pyenv/versions/3.10.10/lib/python3.10/concurrent/futures/process.py", line 700, in _launch_processes
+    self._spawn_process()
+    │    └ <function ProcessPoolExecutor._spawn_process at 0x105913130>
+    └ <concurrent.futures.process.ProcessPoolExecutor object at 0x126abb790>
+  File "/Users/rabeyakhatunmuna/.pyenv/versions/3.10.10/lib/python3.10/concurrent/futures/process.py", line 709, in _spawn_process
+    p.start()
+    │ └ <function BaseProcess.start at 0x104f8b010>
+    └ <ForkProcess name='ForkProcess-82' parent=81003 started>
+  File "/Users/rabeyakhatunmuna/.pyenv/versions/3.10.10/lib/python3.10/multiprocessing/process.py", line 121, in start
+    self._popen = self._Popen(self)
+    │    │        │    │      └ <ForkProcess name='ForkProcess-82' parent=81003 started>
+    │    │        │    └ <staticmethod(<function ForkProcess._Popen at 0x1058d4b80>)>
+    │    │        └ <ForkProcess name='ForkProcess-82' parent=81003 started>
+    │    └ None
+    └ <ForkProcess name='ForkProcess-82' parent=81003 started>
+  File "/Users/rabeyakhatunmuna/.pyenv/versions/3.10.10/lib/python3.10/multiprocessing/context.py", line 281, in _Popen
+    return Popen(process_obj)
+           │     └ <ForkProcess name='ForkProcess-82' parent=81003 started>
+           └ <class 'multiprocessing.popen_fork.Popen'>
+  File "/Users/rabeyakhatunmuna/.pyenv/versions/3.10.10/lib/python3.10/multiprocessing/popen_fork.py", line 19, in __init__
+    self._launch(process_obj)
+    │    │       └ <ForkProcess name='ForkProcess-82' parent=81003 started>
+    │    └ <function Popen._launch at 0x126ccf370>
+    └ <multiprocessing.popen_fork.Popen object at 0x126c953c0>
+  File "/Users/rabeyakhatunmuna/.pyenv/versions/3.10.10/lib/python3.10/multiprocessing/popen_fork.py", line 71, in _launch
+    code = process_obj._bootstrap(parent_sentinel=child_r)
+           │           │                          └ 24
+           │           └ <function BaseProcess._bootstrap at 0x104f8b910>
+           └ <ForkProcess name='ForkProcess-82' parent=81003 started>
+  File "/Users/rabeyakhatunmuna/.pyenv/versions/3.10.10/lib/python3.10/multiprocessing/process.py", line 314, in _bootstrap
+    self.run()
+    │    └ <function BaseProcess.run at 0x104f8af80>
+    └ <ForkProcess name='ForkProcess-82' parent=81003 started>
+  File "/Users/rabeyakhatunmuna/.pyenv/versions/3.10.10/lib/python3.10/multiprocessing/process.py", line 108, in run
+    self._target(*self._args, **self._kwargs)
+    │    │        │    │        │    └ {}
+    │    │        │    │        └ <ForkProcess name='ForkProcess-82' parent=81003 started>
+    │    │        │    └ (<concurrent.futures.process._SafeQueue object at 0x126c95480>, <multiprocessing.queues.SimpleQueue object at 0x126c95810>, N...
+    │    │        └ <ForkProcess name='ForkProcess-82' parent=81003 started>
+    │    └ <function _process_worker at 0x105912680>
+    └ <ForkProcess name='ForkProcess-82' parent=81003 started>
+  File "/Users/rabeyakhatunmuna/.pyenv/versions/3.10.10/lib/python3.10/concurrent/futures/process.py", line 246, in _process_worker
+    r = call_item.fn(*call_item.args, **call_item.kwargs)
+        │         │   │         │       │         └ {}
+        │         │   │         │       └ <concurrent.futures.process._CallItem object at 0x104f93340>
+        │         │   │         └ (<app.raw_tasks.RawSweTask object at 0x1269f0a90>,)
+        │         │   └ <concurrent.futures.process._CallItem object at 0x104f93340>
+        │         └ <function run_raw_task at 0x126aeb5b0>
+        └ <concurrent.futures.process._CallItem object at 0x104f93340>
+
+> File "/Users/rabeyakhatunmuna/Documents/research/SOEN691-Project-AutoCodeRover/auto-code-rover/app/main.py", line 494, in run_raw_task
+    run_ok = do_inference(task.to_task(), task_output_dir)
+             │            │    │          └ '/Users/rabeyakhatunmuna/Documents/research/SOEN691-Project-AutoCodeRover/output/google__gson-1093_2025-03-01_12-32-32'
+             │            │    └ <function RawSweTask.to_task at 0x126aea7a0>
+             │            └ <app.raw_tasks.RawSweTask object at 0x1269f0a90>
+             └ <function do_inference at 0x126aeb760>
+
+  File "/Users/rabeyakhatunmuna/Documents/research/SOEN691-Project-AutoCodeRover/auto-code-rover/app/main.py", line 575, in do_inference
+    python_task.setup_project()
+    │           └ <function SweTask.setup_project at 0x1260b8790>
+    └ SweTask(task_id='google__gson-1093', problem_statement='JsonWriter#value(java.lang.Number) can be lenient, but JsonWriter#val...
+
+  File "/Users/rabeyakhatunmuna/Documents/research/SOEN691-Project-AutoCodeRover/auto-code-rover/app/task.py", line 136, in setup_project
+    with apputils.cd(task.project_path):
+         │        │  │    └ <property object at 0x1260ca200>
+         │        │  └ SweTask(task_id='google__gson-1093', problem_statement='JsonWriter#value(java.lang.Number) can be lenient, but JsonWriter#val...
+         │        └ <function cd at 0x11201cee0>
+         └ <module 'app.utils' from '/Users/rabeyakhatunmuna/Documents/research/SOEN691-Project-AutoCodeRover/auto-code-rover/app/utils....
+
+  File "/Users/rabeyakhatunmuna/.pyenv/versions/3.10.10/lib/python3.10/contextlib.py", line 135, in __enter__
+    return next(self.gen)
+                │    └ <generator object cd at 0x126ae7df0>
+                └ <contextlib._GeneratorContextManager object at 0x126c96140>
+
+  File "/Users/rabeyakhatunmuna/Documents/research/SOEN691-Project-AutoCodeRover/auto-code-rover/app/utils.py", line 26, in cd
+    os.chdir(os.path.expanduser(newdir))
+    │  │     │  │    │          └ '/Users/rabeyakhatunmuna/Documents/research/SOEN691-Project-AutoCodeRover/SWE-bench/testbed/google__gson/setup_google__gson__...
+    │  │     │  │    └ <function expanduser at 0x1046af400>
+    │  │     │  └ <module 'posixpath' from '/Users/rabeyakhatunmuna/.pyenv/versions/3.10.10/lib/python3.10/posixpath.py'>
+    │  │     └ <module 'os' from '/Users/rabeyakhatunmuna/.pyenv/versions/3.10.10/lib/python3.10/os.py'>
+    │  └ <built-in function chdir>
+    └ <module 'os' from '/Users/rabeyakhatunmuna/.pyenv/versions/3.10.10/lib/python3.10/os.py'>
+
+FileNotFoundError: [Errno 2] No such file or directory: '/Users/rabeyakhatunmuna/Documents/research/SOEN691-Project-AutoCodeRover/SWE-bench/testbed/google__gson/setup_google__gson__0.1'
+2025-03-01 12:32:32.661 | INFO     | Task google__gson-1093 failed with exception: [Errno 2] No such file or directory: '/Users/rabeyakhatunmuna/Documents/research/SOEN691-Project-AutoCodeRover/SWE-bench/testbed/google__gson/setup_google__gson__0.1'.
+2025-03-01 12:32:32.663 | INFO     | No patch generated. You can try running ACR again.

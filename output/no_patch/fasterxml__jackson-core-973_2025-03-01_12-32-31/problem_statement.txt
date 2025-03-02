@@ -1,0 +1,8 @@
+Address performance issue with `BigDecimalParser`
+Although there were reasons to expect `BigDecimalParser` could help handling of very large numbers -- and was consequently added for 2.14 via #814 --  there are concerns that there are cases where its performance is sub-standard.
+
+In particular there are concerns with use of large exponents (scientific-notation) which lead to "big" numbers but ones that are compact enough (wrt textual representation) not to trigger "too big number" guardrails but lead to poor performance.
+If and when regular JDK `BigDecimal` parser does not have similar issues, we may need to remove usage.
+
+A test case exists to show the issue but I will not include it here: contact me over mailing list(s) for details if interested.
+

@@ -1,0 +1,30 @@
+{
+    "task_id": "fasterxml__jackson-core-973",
+    "setup_info": {
+        "repo_path": "/Users/rabeyakhatunmuna/Documents/research/SOEN691-Project-AutoCodeRover/SWE-bench/testbed/fasterxml__jackson-core/setup_fasterxml__jackson-core__0.1",
+        "env_name": "setup_fasterxml__jackson-core__0.1",
+        "pre_install": [],
+        "install": "mvn clean install -Dmaven.test.skip=true",
+        "test_cmd": "mvn clean test src/test/java/com/fasterxml/jackson/failing/PerfBigDecimalParser967.java"
+    },
+    "task_info": {
+        "repo": "fasterxml/jackson-core",
+        "pull_number": 973,
+        "instance_id": "fasterxml__jackson-core-973",
+        "issue_numbers": [
+            "967"
+        ],
+        "base_commit": "eb85a336b1baa50b40f7758a24f0e93d814e70a0",
+        "patch": "diff --git a/release-notes/VERSION-2.x b/release-notes/VERSION-2.x\nindex 99e3bc448a..939ac3ddbb 100644\n--- a/release-notes/VERSION-2.x\n+++ b/release-notes/VERSION-2.x\n@@ -25,6 +25,7 @@ No changes since 2.14\n #912: Optional padding Base64Variant still throws exception on missing\n   padding character\n  (reported by @Vity01)\n+#967: Address performance issue with `BigDecimalParser`\n \n 2.14.2 (28-Jan-2023)\n \ndiff --git a/src/main/java/com/fasterxml/jackson/core/io/BigDecimalParser.java b/src/main/java/com/fasterxml/jackson/core/io/BigDecimalParser.java\nindex 173af8300e..1afba6d0d6 100644\n--- a/src/main/java/com/fasterxml/jackson/core/io/BigDecimalParser.java\n+++ b/src/main/java/com/fasterxml/jackson/core/io/BigDecimalParser.java\n@@ -178,6 +178,13 @@ private static BigDecimal toBigDecimalRec(final char[] chars, final int off, fin\n             return left.add(right);\n         }\n \n-        return len == 0 ? BigDecimal.ZERO : new BigDecimal(chars, off, len).movePointRight(scale);\n+        if (len == 0) {\n+            return BigDecimal.ZERO;\n+        }\n+        // 02-Apr-2023, tatu: [core#967] Looks like \"scaleByPowerOfThen\" avoids performance issue\n+        //    there would be with \"movePointRight\" (both doing about same thing), so)\n+        return new BigDecimal(chars, off, len)\n+//                .movePointRight(scale);\n+                .scaleByPowerOfTen(scale);\n     }\n }\n",
+        "test_patch": "diff --git a/src/test/java/com/fasterxml/jackson/failing/PerfBigDecimalParser967.java b/src/test/java/com/fasterxml/jackson/failing/PerfBigDecimalParser967.java\nindex d57cdc0b7c..42e7f6d8fd 100644\n--- a/src/test/java/com/fasterxml/jackson/failing/PerfBigDecimalParser967.java\n+++ b/src/test/java/com/fasterxml/jackson/failing/PerfBigDecimalParser967.java\n@@ -11,7 +11,7 @@ public class PerfBigDecimalParser967\n     private final JsonFactory JSON_F = new JsonFactory();\n \n     // For [core#967]: shouldn't take multiple seconds\n-    @Test(timeout = 35000)\n+    @Test(timeout = 3000)\n     public void bigDecimalFromString() throws Exception {\n         // Jackson's BigDecimalParser seems to be slower than JDK's;\n         // won't fail if using latter.\n",
+        "problem_statement": "Address performance issue with `BigDecimalParser`\nAlthough there were reasons to expect `BigDecimalParser` could help handling of very large numbers -- and was consequently added for 2.14 via #814 --  there are concerns that there are cases where its performance is sub-standard.\r\n\r\nIn particular there are concerns with use of large exponents (scientific-notation) which lead to \"big\" numbers but ones that are compact enough (wrt textual representation) not to trigger \"too big number\" guardrails but lead to poor performance.\r\nIf and when regular JDK `BigDecimal` parser does not have similar issues, we may need to remove usage.\r\n\r\nA test case exists to show the issue but I will not include it here: contact me over mailing list(s) for details if interested.\r\n\n",
+        "hints_text": "/cc @pjfanning This is one of 2 that we had discussion about\nMight be useful to backport this to 2.14.\n@pjfanning I guess if it's safe enough, my only concern would be about breaking something. Then again, functionality itself is probably rarely actually used in real-world production (fwtw :) ).",
+        "created_at": 1680647899000,
+        "FAIL_TO_PASS": [
+            "src:com.fasterxml.jackson.failing.PerfBigDecimalParser967"
+        ],
+        "PASS_TO_PASS": [],
+        "version": "0.1",
+        "pr_link": "https://github.com/fasterxml/jackson-core/pull/973"
+    }
+}
