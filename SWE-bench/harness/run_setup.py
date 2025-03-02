@@ -124,71 +124,33 @@ def create_conda_env(
     install = repo_map_version_to_install[version]
 
     # (3) do the real work: consider different project setups
-    pkgs = install["packages"] if "packages" in install else ""
-    logger.info(
-        f"packages: {pkgs} install: {install['packages']}"
-    )
-    python_version = install["python"]
-    # create a temp dir to save setup temp files
+    jdk_version = install.get("jdk_version", "11")  # Default JDK 11
+    env_type = install.get("env_type", "").lower()  # "maven" or "gradle"
+    install_cmd = install.get("install", "")
+
+    # Ensure Java version is set correctly
+    logger.info(f"[{env_name}] Setting up Java {jdk_version} for {repo_full}")
+    exec_wrapper(f"export JAVA_HOME=$(dirname $(dirname $(readlink -f $(which java)))) && export PATH=$JAVA_HOME/bin:$PATH", shell=True)
+
     temp_dir = pjoin(repo_path, "setup_temp")
     os.makedirs(temp_dir, exist_ok=True)
 
-    if pkgs == "requirements.txt":
-        # create environment
-        cmd = f"{conda_bin_path} create -n {env_name} python={python_version} -y"
-        logger.info(f"[{env_name}] Creating environment {env_name}; Command: {cmd}")
-        exec_wrapper(cmd.split(" "))
-        # install dependencies
-        path_to_reqs = get_requirements(instance, temp_dir)
-        # Make sure to deactivate so that we can remove the environment.
-        # This is necessary if we are running the setup script multiple times.
-        # cmd = f"source {activate_path} {env_name} && echo 'activate successful' && python -m pip install -r {path_to_reqs} ; source {deactivate_path}"
-        cmd = f"call conda activate {env_name} && echo 'activate successful' && python -m pip install -r {path_to_reqs} && conda deactivate"
-        logger.info(
-            f"[{env_name}] Installing dependencies for {env_name}; Command: {cmd}"
-        )
+    # Run project-specific build commands
+    if env_type == "maven":
+        cmd = f"cd {repo_path} && {install_cmd}"
+        logger.info(f"[{env_name}] Running Maven build: {cmd}")
         exec_wrapper(cmd, shell=True)
-        os.remove(path_to_reqs)
 
-    elif pkgs == "environment.yml":
-        # create environment from yml
-        path_to_reqs = get_environment_yml(instance, env_name, temp_dir)
-        if "no_use_env" in install and install["no_use_env"]:
-            # `conda create` based installation
-            cmd = f"{conda_bin_path} create -c conda-forge -n {env_name} python={python_version} -y"
-            logger.info(f"[{env_name}] Creating environment {env_name}; Command: {cmd}")
-            exec_wrapper(cmd.split(" "))
-            # Install dependencies
-            cmd = f"{conda_bin_path} env update -f {path_to_reqs}"
-            logger.info(
-                f"[{env_name}] Installing dependencies for {env_name}; Command: {cmd}"
-            )
-            exec_wrapper(cmd.split(" "))
-        else:
-            # `conda env create` based installation
-            cmd = f"{conda_bin_path} env create --file {path_to_reqs}"
-            logger.info(f"[{env_name}] Creating environment {env_name}; Command: {cmd}")
-            exec_wrapper(cmd.split(" "))
-        # Remove environment.yml
-        os.remove(path_to_reqs)
+    elif env_type == "gradle":
+        cmd = f"cd {repo_path} && {install_cmd}"
+        logger.info(f"[{env_name}] Running Gradle build: {cmd}")
+        exec_wrapper(cmd, shell=True)
 
     else:
-        # pkg is a list of packages
-        # Create environment + install dependencies
-        cmd = f"{conda_bin_path} create -n {env_name} python={python_version} {pkgs} -y"
-        logger.info(f"[{env_name}] Creating environment {env_name}; Command: {cmd}")
-        exec_wrapper(cmd.split(" "))
+        logger.warning(f"[{env_name}] Unknown environment type '{env_type}' for {repo_full}. Skipping setup.")
+        return
 
-    # Install additional packages if specified
-    if "pip_packages" in install:
-        pip_packages = install["pip_packages"]
-        # Make sure to deactivate so that we can remove the environment.
-        # This is necessary if we are running the setup script multiple times.
-        cmd = f"source {activate_path} {env_name} && python -m pip install {pip_packages} ; source {deactivate_path}"
-        logger.info(
-            f"[{env_name}] Installing pip packages for {env_name}; Command: {cmd}"
-        )
-        exec_wrapper(cmd, shell=True)
+    logger.info(f"[{env_name}] Successfully set up {repo_full} with {env_type}.")
 
 
 def collect_install_instructions(repo_full: str, version: str) -> Tuple[List[str], str]:
