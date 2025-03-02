@@ -1,3 +1,0 @@
-Detailed error message from custom key deserializer is discarded
-The PR I'm about to create shows what I'm talking about.
-
