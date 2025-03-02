@@ -206,7 +206,7 @@ def setup_one_repo_version(
     logger.info(f"[{env_name}] Cloned {repo_full} to {repo_path}")
     create_conda_env(repo_full, version, repo_path, env_name, task)
     logger.info(
-        f"[{env_name}] Created conda environment {env_name} for {repo_full} {version}"
+        f"[{env_name}] Created java environment {env_name} for {repo_full} {version}"
     )
     # "install" and "pre_install" steps are per task;
     # we don't do them here, but instead collects the commands and write them out;

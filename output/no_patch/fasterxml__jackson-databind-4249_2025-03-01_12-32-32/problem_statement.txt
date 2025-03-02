@@ -1,0 +1,15 @@
+`ThrowableDeserializer` does not handle `null` well for `cause`
+### Describe your Issue
+
+Currently JSON for deserializing any `Throwable` with `null` for `"cause"` property:
+
+```
+{ "message": "...",
+   "cause": null
+}
+```
+
+will lead to cryptic exception, due to `Throwable.initCause()` being called with `null`.
+To avoid this, `ThrowableDeserializer` should handle this edge case gracefully.
+
+

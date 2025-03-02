@@ -1,0 +1,73 @@
+Possible wrong use of _arrayDelegateDeserializer in BeanDeserializerBase::deserializeFromObjectUsingNonDefault
+### Search before asking
+
+- [X] I searched in the [issues](https://github.com/FasterXML/jackson-databind/issues) and found nothing similar.
+
+### Describe the bug
+
+Deserialisation doesn't work as expected in case of several Json Creators are defined on a class ( PROPERTIES and DELEGATED), and the delegating one is accepting a `List` as an argument and represents the single mandatory property of the class. 
+
+It's expected that the PROPERTIES deserializer will be used, but the deserialisation process opts for the delegating deserialiser despite JSON definition being provided as Object.
+
+### Version Information
+
+2.16.1
+
+### Reproduction
+
+I have the following class definition for a JSON object:
+```
+class MyDefinition {
+  List<StepDefinition> steps;
+  ExtraProperties extra;
+
+  @JsonCreator(mode = JsonCreator.Mode.PROPERTIES)
+  public MyDefinition(@JsonProperty("steps") List<StepDefinition> steps, @JsonProperty("extra") ExtraProperties extra) {
+     this.steps = steps;
+     this.extra = extra;
+  }
+
+  @JsonCreator(mode = JsonCreator.Mode.DELEGATING)
+  public static MyDefinition of(List<StepDefinition> steps) {
+    return new MyDefinition(steps, null);
+  }
+}
+```
+
+Classes `StepDefinition` and `ExtraProperties` are simple class with straight-forward mapping.
+
+I annotated the `MyDefinition` class in such a way, so it could handle mapping for the following two cases of JSON:
+
+Case 1:
+```
+{
+  "myDefinition": {
+    "steps": [ { "step": "some" } ], 
+    "extra": { "prop": "value" }
+  }
+}
+```
+
+Case 2:
+```
+{ 
+  "myDefinition": [
+    { "step": "some" }
+  ]
+}
+```
+
+The deserialisation for the "PROPERTIES" case (Case 1)  fails on trying to deserialise "extra" property value as `StepDefinition` type.
+
+### Expected behavior
+
+I'd expect that the PROPERTIES deserialiser is used in case the object is provided with a bunch of properties.
+
+### Additional context
+
+A similar mapping scenario works in case the delegating factory method accepts `String` as a value (not a list).
+
+My mapper is created using `YAMLFactory` and the failure occurs on parsing YAML.
+The mapper has `DeserializationFeature.ACCEPT_SINGLE_VALUE_AS_ARRAY` feature enabled, and is configured with `ParameterNamesModule`
+
+I guess it could be important to mention that I also use Lombok.

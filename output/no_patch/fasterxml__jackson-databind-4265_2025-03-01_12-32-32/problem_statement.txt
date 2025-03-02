@@ -1,0 +1,12 @@
+Improve handling of `null` insertion failure for `TreeSet`
+### Describe your Issue
+
+(note: tackling issue surfaced by OSS-Fuzz via https://bugs.chromium.org/p/oss-fuzz/issues/detail?id=64509)
+
+Currently attempts to deserialize `null` values for `TreeSet` will fail with underlying NPE which usually gets wrapped as `JsonMappingException` (unless `DeserializationFeature.WRAP_EXCEPTIONS` is disabled). While acceptable this is not optimal failure indication: let's instead catch NPE and throw more meaningful exception; similar to Guava change:
+
+https://github.com/FasterXML/jackson-datatypes-collections/pull/132
+
+
+
+
