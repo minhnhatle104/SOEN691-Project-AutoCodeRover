@@ -14,6 +14,7 @@ from constants import (
     MAP_VERSION_TO_INSTALL,
     MAP_REPO_TO_TEST_FRAMEWORK,
 )
+
 from context_manager import ExecWrapper
 from utils import (
     clone_repo,
@@ -114,72 +115,42 @@ def create_conda_env(
         exec_wrapper(install_cmd, shell=True)
 
     # (2) get install information
+    logger.info(
+            f"Repo full: {repo_full}"
+    )
+
     repo_map_version_to_install = MAP_VERSION_TO_INSTALL[repo_full]
     # dict with key "python", "packages", "pip_packages", "install"
     install = repo_map_version_to_install[version]
 
     # (3) do the real work: consider different project setups
-    pkgs = install["packages"] if "packages" in install else ""
-    python_version = install["python"]
-    # create a temp dir to save setup temp files
+    jdk_version = install.get("jdk_version", "11")  # Default JDK 11
+    env_type = install.get("env_type", "").lower()  # "maven" or "gradle"
+    install_cmd = install.get("install", "")
+
+    # Ensure Java version is set correctly
+    logger.info(f"[{env_name}] Setting up Java {jdk_version} for {repo_full}")
+    exec_wrapper(f"export JAVA_HOME=$(dirname $(dirname $(readlink -f $(which java)))) && export PATH=$JAVA_HOME/bin:$PATH", shell=True)
+
     temp_dir = pjoin(repo_path, "setup_temp")
     os.makedirs(temp_dir, exist_ok=True)
 
-    if pkgs == "requirements.txt":
-        # create environment
-        cmd = f"{conda_bin_path} create -n {env_name} python={python_version} -y"
-        logger.info(f"[{env_name}] Creating environment {env_name}; Command: {cmd}")
-        exec_wrapper(cmd.split(" "))
-        # install dependencies
-        path_to_reqs = get_requirements(instance, temp_dir)
-        # Make sure to deactivate so that we can remove the environment.
-        # This is necessary if we are running the setup script multiple times.
-        cmd = f"source {activate_path} {env_name} && echo 'activate successful' && python -m pip install -r {path_to_reqs} ; source {deactivate_path}"
-        logger.info(
-            f"[{env_name}] Installing dependencies for {env_name}; Command: {cmd}"
-        )
+    # Run project-specific build commands
+    if env_type == "maven":
+        cmd = f"cd {repo_path} && {install_cmd}"
+        logger.info(f"[{env_name}] Running Maven build: {cmd}")
         exec_wrapper(cmd, shell=True)
-        os.remove(path_to_reqs)
 
-    elif pkgs == "environment.yml":
-        # create environment from yml
-        path_to_reqs = get_environment_yml(instance, env_name, temp_dir)
-        if "no_use_env" in install and install["no_use_env"]:
-            # `conda create` based installation
-            cmd = f"{conda_bin_path} create -c conda-forge -n {env_name} python={python_version} -y"
-            logger.info(f"[{env_name}] Creating environment {env_name}; Command: {cmd}")
-            exec_wrapper(cmd.split(" "))
-            # Install dependencies
-            cmd = f"{conda_bin_path} env update -f {path_to_reqs}"
-            logger.info(
-                f"[{env_name}] Installing dependencies for {env_name}; Command: {cmd}"
-            )
-            exec_wrapper(cmd.split(" "))
-        else:
-            # `conda env create` based installation
-            cmd = f"{conda_bin_path} env create --file {path_to_reqs}"
-            logger.info(f"[{env_name}] Creating environment {env_name}; Command: {cmd}")
-            exec_wrapper(cmd.split(" "))
-        # Remove environment.yml
-        os.remove(path_to_reqs)
+    elif env_type == "gradle":
+        cmd = f"cd {repo_path} && {install_cmd}"
+        logger.info(f"[{env_name}] Running Gradle build: {cmd}")
+        exec_wrapper(cmd, shell=True)
 
     else:
-        # pkg is a list of packages
-        # Create environment + install dependencies
-        cmd = f"{conda_bin_path} create -n {env_name} python={python_version} {pkgs} -y"
-        logger.info(f"[{env_name}] Creating environment {env_name}; Command: {cmd}")
-        exec_wrapper(cmd.split(" "))
+        logger.warning(f"[{env_name}] Unknown environment type '{env_type}' for {repo_full}. Skipping setup.")
+        return
 
-    # Install additional packages if specified
-    if "pip_packages" in install:
-        pip_packages = install["pip_packages"]
-        # Make sure to deactivate so that we can remove the environment.
-        # This is necessary if we are running the setup script multiple times.
-        cmd = f"source {activate_path} {env_name} && python -m pip install {pip_packages} ; source {deactivate_path}"
-        logger.info(
-            f"[{env_name}] Installing pip packages for {env_name}; Command: {cmd}"
-        )
-        exec_wrapper(cmd, shell=True)
+    logger.info(f"[{env_name}] Successfully set up {repo_full} with {env_type}.")
 
 
 def collect_install_instructions(repo_full: str, version: str) -> Tuple[List[str], str]:
@@ -226,13 +197,16 @@ def setup_one_repo_version(
         task: Dict containing task instance.
     """
     logger.info(
+        f" *** PRINT MINH LE:  {repo_full} {repo_path} ======="
+    )
+    logger.info(
         f"[{env_name}] ======= Start setting up for {repo_full} {version} ======="
     )
     clone_repo(repo_full, repo_path)
     logger.info(f"[{env_name}] Cloned {repo_full} to {repo_path}")
     create_conda_env(repo_full, version, repo_path, env_name, task)
     logger.info(
-        f"[{env_name}] Created conda environment {env_name} for {repo_full} {version}"
+        f"[{env_name}] Created java environment {env_name} for {repo_full} {version}"
     )
     # "install" and "pre_install" steps are per task;
     # we don't do them here, but instead collects the commands and write them out;
@@ -394,9 +368,13 @@ def main(
 if __name__ == "__main__":
     script_dir = os.path.dirname(os.path.realpath(__file__))
     root_dir = os.path.dirname(script_dir)
-    # we always read from this file, so put this as a default instead of required
+    # # we always read from this file, so put this as a default instead of required
+    # default_tasks_file = pjoin(
+    #     root_dir, "data", "test-00000-of-00001-dc7762b94638c186.parquet"
+    # )
+
     default_tasks_file = pjoin(
-        root_dir, "data", "test-00000-of-00001-dc7762b94638c186.parquet"
+        root_dir, "data", "multi_swe_bench.parquet"
     )
 
     parser = argparse.ArgumentParser()

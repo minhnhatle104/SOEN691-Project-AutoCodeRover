@@ -3,6 +3,7 @@ import os
 import re
 import httpx as requests
 import subprocess
+import logging
 
 from constants import (
     MAP_REPO_TO_REQS_PATHS,
@@ -16,6 +17,8 @@ from git import Repo
 
 
 load_dotenv()
+
+logger = logging.getLogger("utils")
 
 
 def get_conda_env_names(conda_source: str, env: dict = None) -> list:
@@ -146,6 +149,7 @@ def get_requirements(instance: dict, save_path: str = None):
             SWE_BENCH_URL_RAW, instance["repo"], instance[commit], req_path
         )
         reqs = requests.get(reqs_url)
+        reqs_url = reqs_url.replace("\\", "/")
         if reqs.status_code == 200:
             path_worked = True
             break
@@ -245,9 +249,12 @@ def clone_repo(repo_name: str, path: str, token: str = None) -> bool:
         if token is None:
             token = os.environ.get("GITHUB_TOKEN", "git")
         repo_url = (
-            f"https://{token}@github.com/swe-bench/"
+            f"https://{token}@github.com/minhnhatle104/"
             + repo_name.replace("/", "__")
             + ".git"
+        )
+        logger.info(
+        f" *** REPOSITORY MINH LE:  {repo_url} {repo_name} ======="
         )
         Repo.clone_from(repo_url, path)
         return True

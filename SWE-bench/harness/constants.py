@@ -1,457 +1,145 @@
-MAP_VERSION_TO_INSTALL_SKLEARN = {
+# Java Projects Mapping - Constants for setup and installation
+SPECS_DUBBO = {
     k: {
-        "python": "3.6",
-        "packages": "numpy scipy cython pytest pandas matplotlib",
-        "install": "python -m pip install -v --no-use-pep517 --no-build-isolation -e .",
+        "root_path": "",
+        "jdk_version": "17",
+        "env_type": "maven",
+        "eval_cmd": "(mvn clean install -Dmaven.test.skip=true ; mvn clean test -Dsurefire.useFile=false -Dmaven.test.skip=false -D{test_spec}={test_func} -DfailIfNoTests=false -pl {module}) >>{module_escaped}:{test_func}.test.log"
     }
-    for k in ["0.20", "0.21", "0.22"]
+    for k in ["0.1"]
 }
-MAP_VERSION_TO_INSTALL_SKLEARN.update(
-    {
-        k: {
-            "python": "3.7",
-            "packages": "numpy scipy cython pytest pandas matplotlib",
-            "install": "python -m pip install -v --no-use-pep517 --no-build-isolation -e .",
-        }
-        for k in ["0.23", "0.24"]
-    }
-)
-MAP_VERSION_TO_INSTALL_SKLEARN.update(
-    {
-        k: {
-            "python": "3.9",
-            "packages": "numpy scipy cython pytest pandas matplotlib joblib threadpoolctl",
-            "install": "python -m pip install -v --no-use-pep517 --no-build-isolation -e .",
-        }
-        for k in ["1.0", "1.1", "1.2", "1.3", "1.4"]
-    }
-)
 
-MAP_VERSION_TO_INSTALL_FLASK = {
-    "0.11-dev": {
-        "python": "3.6",
-        "packages": "pytest",
-        "pip_packages": "tox",
-        "install": "python setup.py develop",
-    },
-    "1.0": {
-        "python": "3.8",
-        "packages": "pytest",
-        "pip_packages": "tox",
-        "install": 'python -m pip install -e ".[dev]"',
-    },
-    "1.1": {
-        "python": "3.9",
-        "packages": "pytest",
-        "pip_packages": "tox",
-        "install": 'python -m pip install -e ".[dev]"',
-    },
-    "2.0": {
-        "python": "3.9",
-        "packages": "requirements.txt",
-        "install": "python -m pip install -e .",
-    },
-    "2.1": {
-        "python": "3.10",
-        "packages": "requirements.txt",
-        "install": "python -m pip install -e .",
-    },
-}
-MAP_VERSION_TO_INSTALL_FLASK.update(
-    {
-        k: {
-            "python": "3.6",
-            "packages": "pytest",
-            "pip_packages": "tox",
-            "install": "python -m pip install -e .",
-        }
-        for k in ["0.11", "0.12", "0.12-dev", "0.13-dev"]
-    }
-)
-MAP_VERSION_TO_INSTALL_FLASK.update(
-    {
-        k: {
-            "python": "3.11",
-            "packages": "requirements.txt",
-            "install": "python -m pip install -e .",
-        }
-        for k in ["2.2", "2.3"]
-    }
-)
-
-MAP_VERSION_TO_INSTALL_DJANGO = {
+SPECS_GSON = {
     k: {
-        "python": "3.5",
-        "packages": "requirements.txt",
-        "install": "python setup.py install",
+        "root_path": "",
+        "jdk_version": "11",
+        "env_type": "maven",
+        "eval_cmd": "(mvn clean install -Dmaven.test.skip=true ; mvn clean test -Dsurefire.useFile=false -Dmaven.test.skip=false -D{test_spec}={test_func} -DfailIfNoTests=false -pl {module}) >>{module_escaped}:{test_func}.test.log"
     }
-    for k in ["1.7", "1.8", "1.9", "1.10", "1.11", "2.0", "2.1", "2.2"]
-}
-MAP_VERSION_TO_INSTALL_DJANGO.update(
-    {
-        k: {"python": "3.5", "install": "python setup.py install"}
-        for k in ["1.4", "1.5", "1.6"]
-    }
-)
-MAP_VERSION_TO_INSTALL_DJANGO.update(
-    {
-        k: {
-            "python": "3.6",
-            "packages": "requirements.txt",
-            "install": "python -m pip install -e .",
-        }
-        for k in ["3.0", "3.1", "3.2"]
-    }
-)
-MAP_VERSION_TO_INSTALL_DJANGO.update(
-    {
-        k: {
-            "python": "3.8",
-            "packages": "requirements.txt",
-            "install": "python -m pip install -e .",
-        }
-        for k in ["4.0"]
-    }
-)
-MAP_VERSION_TO_INSTALL_DJANGO.update(
-    {
-        k: {
-            "python": "3.9",
-            "packages": "requirements.txt",
-            "install": "python -m pip install -e .",
-        }
-        for k in ["4.1", "4.2"]
-    }
-)
-MAP_VERSION_TO_INSTALL_DJANGO.update(
-    {
-        k: {
-            "python": "3.11",
-            "packages": "requirements.txt",
-            "install": "python -m pip install -e .",
-        }
-        for k in ["5.0"]
-    }
-)
-
-MAP_VERSION_TO_INSTALL_REQUESTS = {
-    k: {"python": "3.9", "packages": "pytest", "install": "python -m pip install ."}
-    for k in
-        ["0.7", "0.8", "0.9", "0.11", "0.13", "0.14", "1.1", "1.2", "2.0", "2.2"] + \
-        ["2.3", "2.4", "2.5", "2.7", "2.8", "2.9", "2.10", "2.11", "2.12", "2.17"] + \
-        ["2.18", "2.19", "2.22", "2.26", "2.25", "2.27", "3.0"]
+    for k in ["0.1"]
 }
 
-MAP_VERSION_TO_INSTALL_SEABORN = {
-    k: {"python": "3.9", "install": "python -m pip install -e .", "pip_packages": "pytest"}
-    for k in ["0.3", "0.4", "0.5", "0.6", "0.7", "0.8", "0.9", "0.11"]
-}
-MAP_VERSION_TO_INSTALL_SEABORN.update(
-    {k: {"python": "3.9", "install": "python -m pip install -e .[dev]"} for k in ["0.12", "0.13"]}
-)
-
-MAP_VERSION_TO_INSTALL_PYTEST = {
-    k: {"python": "3.9", "install": "python -m pip install -e ."}
-    for k in ["3.10", "6.0", "6.2", "6.3", "8.0"]
-    + [
-        str(round(0.1 * x, 1))
-        for interval in [(30, 47), (50, 55), (70, 75)]
-        for x in range(interval[0], interval[1], 1)
-    ]
-}
-
-MAP_VERSION_TO_INSTALL_MATPLOTLIB = {
+SPECS_JACKSON_CORE = {
     k: {
-        "python": "3.9",
-        "packages": "environment.yml",
-        "install": "python -m pip install -e .",
+        "root_path": "",
+        "jdk_version": "8",
+        "env_type": "maven",
+        "eval_cmd": "(mvn clean install -Dmaven.test.skip=true ; mvn clean test -Dsurefire.useFile=false -Dmaven.test.skip=false -D{test_spec}={test_func} -DfailIfNoTests=false -pl {module}) >>{module_escaped}:{test_func}.test.log"
     }
-    for k in ["3.5", "3.6", "3.7"]
+    for k in ["0.1"]
 }
-MAP_VERSION_TO_INSTALL_MATPLOTLIB.update(
-    {
-        k: {
-            "python": "3.8",
-            "packages": "requirements.txt",
-            "install": "python -m pip install -e .",
-        }
-        for k in ["3.1", "3.2", "3.3", "3.4"]
-    }
-)
-MAP_VERSION_TO_INSTALL_MATPLOTLIB.update(
-    {
-        k: {
-            "python": "3.7",
-            "packages": "requirements.txt",
-            "install": "python -m pip install -e .",
-        }
-        for k in ["3.0"]
-    }
-)
-MAP_VERSION_TO_INSTALL_MATPLOTLIB.update(
-    {
-        k: {
-            "python": "3.5",
-            "install": "python setup.py build; python setup.py install",
-        }
-        for k in ["2.0", "2.1", "2.2", "1.0", "1.1", "1.2", "1.3", "1.4", "1.5"]
-    }
-)
 
-MAP_VERSION_TO_INSTALL_SPHINX = {
+SPECS_JACKSON_DATABIND = {
     k: {
-        "python": "3.9",
-        "pip_packages": "tox",
-        "install": "python -m pip install -e .[test]",
-        "pre_install": ["sed -i 's/pytest/pytest -rA/' tox.ini"],
-    } for k in
-        ["1.5", "1.6", "1.7", "1.8", "2.0", "2.1", "2.2", "2.3", "2.4", "3.0"] + \
-        ["3.1", "3.2", "3.3", "3.4", "3.5", "4.0", "4.1", "4.2", "4.3", "4.4"] + \
-        ["4.5", "5.0", "5.1", "5.2", "5.3", "6.0", "6.2", "7.0", "7.1", "7.2"]
-}
-for k in ["3.0", "3.1", "3.2", "3.3", "3.4", "3.5", "4.0"]:
-    MAP_VERSION_TO_INSTALL_SPHINX[k][
-        "pre_install"
-    ].append("sed -i 's/Jinja2>=2.3/Jinja2<3.1/' setup.py")
-
-MAP_VERSION_TO_INSTALL_ASTROPY = {
-    k: {"python": "3.9", "install": "python -m pip install -e .[test]"}
-    for k in
-        ["0.1", "0.2", "0.3", "0.4", "1.1", "1.2", "1.3", "3.0", "3.1", "3.2"] + \
-        ["4.1", "4.2", "4.3", "5.0", "5.1", "5.2"]
+        "root_path": "",
+        "jdk_version": "8",
+        "env_type": "maven",
+        "eval_cmd": "(mvn clean install -Dmaven.test.skip=true ; mvn clean test -Dsurefire.useFile=false -Dmaven.test.skip=false -D{test_spec}={test_func} -DfailIfNoTests=false -pl {module}) >>{module_escaped}:{test_func}.test.log"
+    }
+    for k in ["0.1"]
 }
 
-MAP_VERSION_TO_INSTALL_SYMPY = {
+SPECS_JACKSON_DATAFORMAT_XML = {
     k: {
-        "python": "3.9",
-        "packages": "mpmath flake8",
-        "pip_packages": "flake8-comprehensions",
-        "install": "python -m pip install -e .",
+        "root_path": "",
+        "jdk_version": "8",
+        "env_type": "maven",
+        "eval_cmd": "(mvn clean install -Dmaven.test.skip=true ; mvn clean test -Dsurefire.useFile=false -Dmaven.test.skip=false -D{test_spec}={test_func} -DfailIfNoTests=false -pl {module}) >>{module_escaped}:{test_func}.test.log"
     }
-    for k in
-        ["0.7", "1.0", "1.1", "1.10", "1.11", "1.12", "1.2", "1.4", "1.5", "1.6"] + \
-        ["1.7", "1.8", "1.9"]
-}
-MAP_VERSION_TO_INSTALL_SYMPY.update(
-    {
-        k: {
-            "python": "3.9",
-            "packages": "requirements.txt",
-            "install": "python -m pip install -e .",
-        }
-        for k in ["1.13"]
-    }
-)
-
-MAP_VERSION_TO_INSTALL_PYLINT = {
-    k: {"python": "3.9", "packages": "requirements.txt", "install": "python -m pip install -e ."}
-    for k in ["2.10", "2.11", "2.13", "2.14", "2.15", "2.16", "2.17", "2.8", "2.9", "3.0"]
+    for k in ["0.1"]
 }
 
-MAP_VERSION_TO_INSTALL_XARRAY = {
+SPECS_JIB = {
     k: {
-        "python": "3.10",
-        "packages": "environment.yml",
-        "install": "python -m pip install -e .",
-        "pip_packages": "pytest",
-        "no_use_env": True,
+        "root_path": "",
+        "jdk_version": "11",
+        "env_type": "gradle",
+        "eval_cmd": "./gradlew {module}:{test_spec} --tests {test_func} >{module}:{test_func}.test.log 2>&1"
     }
-    for k in ["0.12", "0.18", "0.19", "0.20", "2022.03", "2022.06", "2022.09"]
+    for k in ["0.1"]
 }
 
-MAP_VERSION_TO_INSTALL_TRANSFORMERS = {
-    k: {
-        "python": "3.10",
-        "install": "python -m pip install -e .",
-        "pip_packages": "pytest torch tensorflow flax",
-    }
-    for k in [
-        '4.28', '4.29', '4.30', '4.31', '4.32', '4.16', '4.14', '4.15', '4.17',
-        '4.19', '4.18', '4.22', '4.20', '4.11', '4.13', '4.12', '4.6', '4.7',
-        '4.9', '4.8', '4.10', '3.1', '3.2', '3.4', '3.3', '4.0', '3.5', '4.1',
-        '2.5', '2.8', '2.9', '2.11', '2.10', '3.0', '4.3', '4.2', '4.5', '4.4',
-        '4.21', '4.23', '4.24', '4.26', '4.25', '4.27'
-    ]
-}
-
-MAP_VERSION_TO_INSTALL_SQLFLUFF = {
-    k: {
-        "python": "3.9",
-        "packages": "requirements.txt",
-        "install": "python -m pip install -e .",
-    }
-    for k in [
-        '0.10', '0.11', '0.12', '0.13', '0.4', '0.5', '0.6', '0.8', '0.9',
-        '1.0', '1.1', '1.2', '1.3', '1.4', '2.0', '2.1', '2.2'
-    ]
-}
-
-MAP_VERSION_TO_INSTALL_DBT_CORE = {
-    k: {
-        "python": "3.9",
-        "packages": "requirements.txt",
-        "install": "python -m pip install -e .",
-    }
-    for k in [
-        '0.13', '0.14', '0.15', '0.16', '0.17', '0.18', '0.19', '0.20',
-        '0.21', '1.0', '1.1', '1.2', '1.3', '1.4', '1.5', '1.6', '1.7'
-    ]
-}
-
-MAP_VERSION_TO_INSTALL_PYVISTA = {
-    k: {
-        "python": "3.9",
-        "install": "python -m pip install -e .",
-        "pip_packages": "pytest",
-    }
-    for k in ['0.20', '0.21', '0.22', '0.23']
-}
-MAP_VERSION_TO_INSTALL_PYVISTA.update({
-    k: {
-        "python": "3.9",
-        "packages": "requirements.txt",
-        "install": "python -m pip install -e .",
-        "pip_packages": "pytest",
-    }
-    for k in [
-        '0.24', '0.25', '0.26', '0.27', '0.28', '0.29', '0.30', '0.31',
-        '0.32', '0.33', '0.34', '0.35', '0.36', '0.37', '0.38', '0.39',
-        '0.40', '0.41', '0.42', '0.43'
-    ]
-})
-
-MAP_VERSION_TO_INSTALL_ASTROID = {
-    k: {
-        "python": "3.9",
-        "install": "python -m pip install -e .",
-        "pip_packages": "pytest",
-    }
-    for k in [
-        '2.10', '2.12', '2.13', '2.14', '2.15', '2.16', '2.5', '2.6',
-        '2.7', '2.8', '2.9', '3.0'
-    ]
-}
-
-MAP_VERSION_TO_INSTALL_MARSHMALLOW = {
-    k: {
-        "python": "3.9",
-        "install": "python -m pip install -e '.[dev]'",
-    }
-    for k in [
-        '2.18', '2.19', '2.20', '3.0', '3.1', '3.10', '3.11', '3.12',
-        '3.13', '3.15', '3.16', '3.19', '3.2', '3.4', '3.8', '3.9'
-    ]
-}
-
-MAP_VERSION_TO_INSTALL_PVLIB = {
-    k: {
-        "python": "3.9",
-        "install": "python -m pip install -e .[all]",
-        "packages": "pandas scipy",
-        "pip_packages": "jupyter ipython matplotlib pytest flake8"
-    }
-    for k in [
-        '0.1', '0.2', '0.3', '0.4', '0.5', '0.6', '0.7', '0.8', '0.9'
-    ]
-}
-
-MAP_VERSION_TO_INSTALL_PYDICOM = {
-    k: {
-        "python": "3.6",
-        "install": "python -m pip install -e .",
-        "packages": "numpy"
-    }
-    for k in [
-        '1.0', '1.1', '1.2', '1.3', '1.4',
-        '2.0', '2.1', '2.2', '2.3', '2.4', '3.0'
-    ]
-}
-MAP_VERSION_TO_INSTALL_PYDICOM.update({
-    k: {**MAP_VERSION_TO_INSTALL_PYDICOM[k], "python": "3.8"}
-    for k in ['1.4', '2.0']})
-MAP_VERSION_TO_INSTALL_PYDICOM.update({
-    k: {**MAP_VERSION_TO_INSTALL_PYDICOM[k], "python": "3.9"}
-    for k in ['2.1', '2.2']})
-MAP_VERSION_TO_INSTALL_PYDICOM.update({
-    k: {**MAP_VERSION_TO_INSTALL_PYDICOM[k], "python": "3.10"}
-    for k in ['2.3']})
-MAP_VERSION_TO_INSTALL_PYDICOM.update({
-    k: {**MAP_VERSION_TO_INSTALL_PYDICOM[k], "python": "3.11"}
-    for k in ['2.4', '3.0']})
-
-MAP_VERSION_TO_INSTALL_HUMANEVAL= {k: { "python": "3.9" } for k in ['1.0']}
-
-# Constants - Task Instance Instllation Environment
-MAP_VERSION_TO_INSTALL = {
-    "astropy/astropy": MAP_VERSION_TO_INSTALL_ASTROPY,
-    "dbt-labs/dbt-core": MAP_VERSION_TO_INSTALL_DBT_CORE,
-    "django/django": MAP_VERSION_TO_INSTALL_DJANGO,
-    "huggingface/transformers": MAP_VERSION_TO_INSTALL_TRANSFORMERS,
-    "matplotlib/matplotlib": MAP_VERSION_TO_INSTALL_MATPLOTLIB,
-    "marshmallow-code/marshmallow": MAP_VERSION_TO_INSTALL_MARSHMALLOW,
-    "mwaskom/seaborn": MAP_VERSION_TO_INSTALL_SEABORN,
-    "pallets/flask": MAP_VERSION_TO_INSTALL_FLASK,
-    "psf/requests": MAP_VERSION_TO_INSTALL_REQUESTS,
-    "pvlib/pvlib-python": MAP_VERSION_TO_INSTALL_PVLIB,
-    "pydata/xarray": MAP_VERSION_TO_INSTALL_XARRAY,
-    "pydicom/pydicom": MAP_VERSION_TO_INSTALL_PYDICOM,
-    "pylint-dev/astroid": MAP_VERSION_TO_INSTALL_ASTROID,
-    "pylint-dev/pylint": MAP_VERSION_TO_INSTALL_PYLINT,
-    "pytest-dev/pytest": MAP_VERSION_TO_INSTALL_PYTEST,
-    "pyvista/pyvista": MAP_VERSION_TO_INSTALL_PYVISTA,
-    "scikit-learn/scikit-learn": MAP_VERSION_TO_INSTALL_SKLEARN,
-    "sphinx-doc/sphinx": MAP_VERSION_TO_INSTALL_SPHINX,
-    "sqlfluff/sqlfluff": MAP_VERSION_TO_INSTALL_SQLFLUFF,
-    "swe-bench/humaneval": MAP_VERSION_TO_INSTALL_HUMANEVAL,
-    "sympy/sympy": MAP_VERSION_TO_INSTALL_SYMPY,
+# Map each repository to its specs dictionary
+MAP_REPO_VERSION_TO_SPECS = {
+    "apache/dubbo": SPECS_DUBBO,
+    "google/gson": SPECS_GSON,
+    "fasterxml/jackson-core": SPECS_JACKSON_CORE,
+    "fasterxml/jackson-databind": SPECS_JACKSON_DATABIND,
+    "fasterxml/jackson-dataformat-xml": SPECS_JACKSON_DATAFORMAT_XML,
+    "googlecontainertools/jib": SPECS_JIB,
 }
 
 # Constants - Repository Specific Installation Instructions
 MAP_REPO_TO_INSTALL = {}
 
-# Constants - Task Instance Test Frameworks
-TEST_PYTEST = "pytest --no-header -rA --tb=no -p no:cacheprovider"
+# Constants - Task Instance Installation Environment for Java Projects
+MAP_VERSION_TO_INSTALL = {
+    "apache/dubbo": {
+        "0.1": {
+            "jdk_version": "17",
+            "env_type": "maven",
+            "install": "mvn clean install -Dmaven.test.skip=true"
+        }
+    },
+    "google/gson": {
+        "0.1": {
+            "jdk_version": "11",
+            "env_type": "maven",
+            "install": "mvn clean install -Dmaven.test.skip=true"
+        }
+    },
+    "fasterxml/jackson-core": {
+        "0.1": {
+            "jdk_version": "8",
+            "env_type": "maven",
+            "install": "mvn clean install -Dmaven.test.skip=true"
+        }
+    },
+    "fasterxml/jackson-databind": {
+        "0.1": {
+            "jdk_version": "8",
+            "env_type": "maven",
+            "install": "mvn clean install -Dmaven.test.skip=true"
+        }
+    },
+    "fasterxml/jackson-dataformat-xml": {
+        "0.1": {
+            "jdk_version": "8",
+            "env_type": "maven",
+            "install": "mvn clean install -Dmaven.test.skip=true"
+        }
+    },
+    "googlecontainertools/jib": {
+        "0.1": {
+            "jdk_version": "11",
+            "env_type": "gradle",
+            "install": "./gradlew clean build"
+        }
+    }
+}
+
+# Constants - Task Instance Test Frameworks for Java Projects
 MAP_REPO_TO_TEST_FRAMEWORK = {
-    "astropy/astropy": TEST_PYTEST,
-    "dbt-labs/dbt-core": TEST_PYTEST,
-    "django/django": "./tests/runtests.py --verbosity 2",
-    "huggingface/transformers": TEST_PYTEST,
-    "marshmallow-code/marshmallow": TEST_PYTEST,
-    "matplotlib/matplotlib": TEST_PYTEST,
-    "mwaskom/seaborn": "pytest --no-header -rA",
-    "pallets/flask": TEST_PYTEST,
-    "psf/requests": TEST_PYTEST,
-    "pvlib/pvlib-python": TEST_PYTEST,
-    "pydata/xarray": TEST_PYTEST,
-    "pydicom/pydicom": TEST_PYTEST,
-    "pylint-dev/astroid": TEST_PYTEST,
-    "pylint-dev/pylint": TEST_PYTEST,
-    "pytest-dev/pytest": "pytest -rA",
-    "pyvista/pyvista": TEST_PYTEST,
-    "scikit-learn/scikit-learn": TEST_PYTEST,
-    "sphinx-doc/sphinx": "tox -epy39 -v --",
-    "sqlfluff/sqlfluff": TEST_PYTEST,
-    "swe-bench/humaneval": "python",
-    "sympy/sympy": "bin/test -C --verbose",
+    "apache/dubbo": "mvn clean test",
+    "google/gson": "mvn clean test",
+    "fasterxml/jackson-core": "mvn clean test",
+    "fasterxml/jackson-databind": "mvn clean test",
+    "fasterxml/jackson-dataformat-xml": "mvn clean test",
+    "googlecontainertools/jib": "./gradlew test"
 }
 
-# Constants - Task Instance Requirements File Paths
+# Constants - Task Instance Requirements File Paths for Java Projects (if applicable)
 MAP_REPO_TO_REQS_PATHS = {
-    "dbt-labs/dbt-core": ["dev-requirements.txt", "dev_requirements.txt"],
-    "django/django": ["tests/requirements/py3.txt"],
-    "matplotlib/matplotlib": ["requirements/dev/dev-requirements.txt", "requirements/testing/travis_all.txt"],
-    "pallets/flask": ["requirements/dev.txt"],
-    "pylint-dev/pylint": ["requirements_test.txt"],
-    "pyvista/pyvista": ["requirements_test.txt", 'requirements.txt'],
-    "sqlfluff/sqlfluff": ["requirements_dev.txt"],
-    "sympy/sympy": ["requirements-dev.txt"],
+    "apache/dubbo": ["pom.xml"],
+    "google/gson": ["pom.xml"],
+    "fasterxml/jackson-core": ["pom.xml"],
+    "fasterxml/jackson-databind": ["pom.xml"],
+    "fasterxml/jackson-dataformat-xml": ["pom.xml"],
+    "googlecontainertools/jib": ["build.gradle"]
 }
 
-# Constants - Task Instance environment.yml File Paths
-MAP_REPO_TO_ENV_YML_PATHS = {
-    "matplotlib/matplotlib": ["environment.yml"],
-    "pydata/xarray": ["ci/requirements/environment.yml", "environment.yml"],
-}
+# Constants - Task Instance environment.yml File Paths (if applicable)
+MAP_REPO_TO_ENV_YML_PATHS = {}
 
 # Constants - Evaluation Keys
 KEY_INSTANCE_ID = "instance_id"
