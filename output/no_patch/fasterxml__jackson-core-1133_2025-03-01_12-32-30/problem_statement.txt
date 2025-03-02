@@ -1,5 +1,0 @@
-(3.0) Rename `tools.jackson.core.exc.WrappedIOException` as `...JacksonIOException`
-(suggestion by @garretwilson )
-
-Current type of `WrappedIOException` in Jackson 3.0 (`master`) is too generic; let's rename it as `JacksonIOException` instead.
-

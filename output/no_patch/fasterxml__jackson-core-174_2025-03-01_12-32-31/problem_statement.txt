@@ -1,7 +1,0 @@
-Add append() to JsonPointer class.
-For implementing Json MergePatch (RFC 7386) it would be really helpful to implement an append method to json pointer class.
-
-This method should return a new JsonPointer class containing the previous JsonPointer classes + a new JsonPointer which is the appended one.
-
-WDYT?
-
