@@ -1,8 +1,8 @@
 # Java Projects Mapping - Constants for setup and installation
 SPECS_DUBBO = {
     k: {
-        "root_path": "",
-        "jdk_version": "17",
+        "root_path": "SWE-bench/testbed/apache__dubbo",
+        "jdk_version": "8",
         "env_type": "maven",
         "eval_cmd": "(mvn clean install -Dmaven.test.skip=true ; mvn clean test -Dsurefire.useFile=false -Dmaven.test.skip=false -D{test_spec}={test_func} -DfailIfNoTests=false -pl {module}) >>{module_escaped}:{test_func}.test.log"
     }
@@ -76,44 +76,54 @@ MAP_REPO_TO_INSTALL = {}
 MAP_VERSION_TO_INSTALL = {
     "apache/dubbo": {
         "0.1": {
-            "jdk_version": "17",
+            "jdk_version": "8",
             "env_type": "maven",
-            "install": "mvn clean install -Dmaven.test.skip=true"
+            "install": "mvn clean install",
+            "test": "mvn test"
         }
     },
     "google/gson": {
         "0.1": {
             "jdk_version": "11",
             "env_type": "maven",
-            "install": "mvn clean install -Dmaven.test.skip=true"
+            "install": "mvn clean install",
+             "test": "mvn test"
         }
     },
+    
     "fasterxml/jackson-core": {
         "0.1": {
             "jdk_version": "8",
             "env_type": "maven",
-            "install": "mvn clean install -Dmaven.test.skip=true"
+            "install": "mvn clean install",
+             "test": "mvn test"
         }
     },
+    
     "fasterxml/jackson-databind": {
         "0.1": {
             "jdk_version": "8",
             "env_type": "maven",
-            "install": "mvn clean install -Dmaven.test.skip=true"
+            "install": "mvn clean install",
+            "test": "mvn test"
         }
     },
+    
     "fasterxml/jackson-dataformat-xml": {
         "0.1": {
             "jdk_version": "8",
             "env_type": "maven",
-            "install": "mvn clean install -Dmaven.test.skip=true"
+            "install": "mvn clean install",
+            "test": "mvn test"
         }
     },
     "googlecontainertools/jib": {
         "0.1": {
-            "jdk_version": "11",
+            "jdk_version": "8",
             "env_type": "gradle",
-            "install": "./gradlew clean build"
+            "install": "./gradlew clean build",
+            "run": "./gradlew run",
+            "test": "./gradlew test"
         }
     }
 }
