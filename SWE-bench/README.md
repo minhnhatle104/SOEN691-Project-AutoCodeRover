@@ -14,43 +14,15 @@ yuntongzhang/swe-bench:experiment
 ## Instructions
 
 ### To install
-
-First, install miniconda:
-
-```
-wget https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh
-bash Miniconda3-latest-Linux-x86_64.sh
-```
-
-Create and activate conda environment for the benchmark:
-
-```
-conda env create -f environment.yml
-conda activate swe-bench
-```
-
-In some distro, `/bin/sh` points to dash instead of bash, which can cause issues when `source` is used in the benchmark code. To change it to bash:
-
-```
-ln -sf /bin/bash /bin/sh
-```
-
-Also install system level packages required by the benchmark subjects:
-These are important for successfully installing the benchmark subject dependencies, as well as
-successfully running the benchmark subject tests.
-
-```
-sudo apt install -y libffi-dev python3-pytest libfreetype6-dev libqhull-dev pkg-config texlive cm-super dvipng python-tk ffmpeg imagemagick fontconfig ghostscript inkscape graphviz optipng fonts-comic-neue python3-pikepdf build-essential libssl-dev
-
-sudo apt install ttf-mscorefonts-installer
-```
+ Ensure the necessary libraries are installed, including git and subprocess
 
 ### To set up task instances for other tools
 
-Sometimes you may want to only set up the projects' environments without running any evaluation.
-This is useful if you want to inspect the particular project states.
+Run the following command to create a setup directory that is compatible with your local environment. This will also generate a setup.json file, which accounts for varying root_path across different systems.
 
 **To set up all task instances, do:**
+
+To generate setup_map and task_map, run the below command, cause based on directory the setup_map will genrate new directory that is compatoble for anyone's pc.
 
 ```
 python harness/run_setup.py --log_dir logs --testbed testbed --result_dir setup_result
@@ -62,17 +34,6 @@ python harness/run_setup.py --log_dir logs --testbed testbed --result_dir setup_
 python harness/run_setup.py --log_dir logs --testbed testbed --result_dir setup_result --num_processes 16
 ```
 
-**If you only want to set up a subset of tasks, write the list of tasks into a file <subset_file> and do:**
-
-```
-python harness/run_setup.py --log_dir logs --testbed testbed --result_dir setup_result --subset_file <subset_file> --num_processes 16
-```
-
-**If you only want to write out the setup json files without actually cloning the repos and perform the actual setup, do:**
-
-```
-python harness/run_setup.py --log_dir logs --testbed testbed --result_dir setup_result --only_dump_files
-```
 
 ### To evaluate on some task instances
 

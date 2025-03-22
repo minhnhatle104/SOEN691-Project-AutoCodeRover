@@ -1,141 +1,156 @@
-# Java Projects Mapping - Constants for setup and installation
-SPECS_DUBBO = {
-    k: {
-        "root_path": "",
+# constants.py
+
+# Define the setup configurations for each repository version
+SPECS_APACHE_DUBBO = {
+    "0.1": {
+        "root_path": "SWE-bench/testbed/apache__dubbo",  # Corrected repo name
         "jdk_version": "17",
         "env_type": "maven",
         "eval_cmd": "(mvn clean install -Dmaven.test.skip=true ; mvn clean test -Dsurefire.useFile=false -Dmaven.test.skip=false -D{test_spec}={test_func} -DfailIfNoTests=false -pl {module}) >>{module_escaped}:{test_func}.test.log"
     }
-    for k in ["0.1"]
 }
 
-SPECS_GSON = {
-    k: {
-        "root_path": "",
+SPECS_FASTERXML_JACKSON_DATABIND = {
+    "0.1": {
+        "root_path": "SWE-bench/testbed/fasterxml__jackson-databind",  # Corrected repo name
+        "jdk_version": "8",
+        "env_type": "maven",
+        "eval_cmd": "(mvn clean install -Dmaven.test.skip=true ; mvn clean test -Dsurefire.useFile=false -Dmaven.test.skip=false -D{test_spec}={test_func} -DfailIfNoTests=false -pl {module}) >>{module_escaped}:{test_func}.test.log"
+    }
+}
+
+SPECS_FASTERXML_JACKSON_CORE = {
+    "0.1": {
+        "root_path": "SWE-bench/testbed/fasterxml__jackson-core",  # Corrected repo name
+        "jdk_version": "8",
+        "env_type": "maven",
+        "eval_cmd": "(mvn clean install -Dmaven.test.skip=true ; mvn clean test -Dsurefire.useFile=false -Dmaven.test.skip=false -D{test_spec}={test_func} -DfailIfNoTests=false -pl {module}) >>{module_escaped}:{test_func}.test.log"
+    }
+}
+
+SPECS_GOOGLE_GSON = {
+    "0.1": {
+        "root_path": "SWE-bench/testbed/google__gson",  # Corrected repo name
         "jdk_version": "11",
         "env_type": "maven",
         "eval_cmd": "(mvn clean install -Dmaven.test.skip=true ; mvn clean test -Dsurefire.useFile=false -Dmaven.test.skip=false -D{test_spec}={test_func} -DfailIfNoTests=false -pl {module}) >>{module_escaped}:{test_func}.test.log"
     }
-    for k in ["0.1"]
 }
 
-SPECS_JACKSON_CORE = {
-    k: {
-        "root_path": "",
+SPECS_FASTERXML_JACKSON_DATAFORMAT_XML = {
+    "0.1": {
+        "root_path": "SWE-bench/testbed/fasterxml__jackson-dataformat-xml",  # Corrected repo name
         "jdk_version": "8",
         "env_type": "maven",
         "eval_cmd": "(mvn clean install -Dmaven.test.skip=true ; mvn clean test -Dsurefire.useFile=false -Dmaven.test.skip=false -D{test_spec}={test_func} -DfailIfNoTests=false -pl {module}) >>{module_escaped}:{test_func}.test.log"
     }
-    for k in ["0.1"]
 }
 
-SPECS_JACKSON_DATABIND = {
-    k: {
-        "root_path": "",
-        "jdk_version": "8",
-        "env_type": "maven",
-        "eval_cmd": "(mvn clean install -Dmaven.test.skip=true ; mvn clean test -Dsurefire.useFile=false -Dmaven.test.skip=false -D{test_spec}={test_func} -DfailIfNoTests=false -pl {module}) >>{module_escaped}:{test_func}.test.log"
-    }
-    for k in ["0.1"]
-}
-
-SPECS_JACKSON_DATAFORMAT_XML = {
-    k: {
-        "root_path": "",
-        "jdk_version": "8",
-        "env_type": "maven",
-        "eval_cmd": "(mvn clean install -Dmaven.test.skip=true ; mvn clean test -Dsurefire.useFile=false -Dmaven.test.skip=false -D{test_spec}={test_func} -DfailIfNoTests=false -pl {module}) >>{module_escaped}:{test_func}.test.log"
-    }
-    for k in ["0.1"]
-}
-
-SPECS_JIB = {
-    k: {
-        "root_path": "",
+SPECS_GOOGLECONTAINERS_JIB = {
+    "0.1": {
+        "root_path": "SWE-bench/testbed/googlecontainertools__jib",  # Corrected repo name
         "jdk_version": "11",
         "env_type": "gradle",
         "eval_cmd": "./gradlew {module}:{test_spec} --tests {test_func} >{module}:{test_func}.test.log 2>&1"
     }
-    for k in ["0.1"]
 }
 
-# Map each repository to its specs dictionary
+# Map each repository to its specs dictionary for easy access during setup
 MAP_REPO_VERSION_TO_SPECS = {
-    "apache/dubbo": SPECS_DUBBO,
-    "google/gson": SPECS_GSON,
-    "fasterxml/jackson-core": SPECS_JACKSON_CORE,
-    "fasterxml/jackson-databind": SPECS_JACKSON_DATABIND,
-    "fasterxml/jackson-dataformat-xml": SPECS_JACKSON_DATAFORMAT_XML,
-    "googlecontainertools/jib": SPECS_JIB,
+    "apache__dubbo": SPECS_APACHE_DUBBO,
+    "fasterxml__jackson-databind": SPECS_FASTERXML_JACKSON_DATABIND,
+    "fasterxml__jackson-core": SPECS_FASTERXML_JACKSON_CORE,
+    "google__gson": SPECS_GOOGLE_GSON,
+    "fasterxml__jackson-dataformat-xml": SPECS_FASTERXML_JACKSON_DATAFORMAT_XML,
+    "googlecontainertools__jib": SPECS_GOOGLECONTAINERS_JIB,
 }
 
-# Constants - Repository Specific Installation Instructions
-MAP_REPO_TO_INSTALL = {}
+# Define custom installation commands for repositories
+MAP_REPO_TO_INSTALL = {
+    "apache__dubbo": "mvn clean install -Dmaven.test.skip=true",  # Add appropriate install command for dubbo
+    "fasterxml__jackson-databind": "mvn clean install -Dmaven.test.skip=true",  # Add appropriate install command for jackson-databind
+    "fasterxml__jackson-core": "mvn clean install -Dmaven.test.skip=true",  # Add appropriate install command for jackson-core
+    "google__gson": "mvn clean install -Dmaven.test.skip=true",  # Add appropriate install command for gson
+    "fasterxml__jackson-dataformat-xml": "mvn clean install -Dmaven.test.skip=true",  # Add appropriate install command for jackson-dataformat-xml
+    "googlecontainertools__jib": "./gradlew build",  # Add appropriate install command for jib
+}
 
-# Constants - Task Instance Installation Environment for Java Projects
+# Define test framework mapping for repositories
+MAP_REPO_TO_TEST_FRAMEWORK = {
+    "apache__dubbo": "mvn test",  # Add appropriate test framework for dubbo
+    "fasterxml__jackson-databind": "mvn test",  # Add appropriate test framework for jackson-databind
+    "fasterxml__jackson-core": "mvn test",  # Add appropriate test framework for jackson-core
+    "google__gson": "mvn test",  # Add appropriate test framework for gson
+    "fasterxml__jackson-dataformat-xml": "mvn test",  # Add appropriate test framework for jackson-dataformat-xml
+    "googlecontainertools__jib": "./gradlew test",  # Add appropriate test framework for jib
+}
+
+# Mapping versions to installation instructions
 MAP_VERSION_TO_INSTALL = {
-    "apache/dubbo": {
+    "apache__dubbo": {
         "0.1": {
             "jdk_version": "17",
             "env_type": "maven",
-            "install": "mvn clean install -Dmaven.test.skip=true"
+            "install": "mvn clean install -Dmaven.test.skip=true",  # Add install command for dubbo
         }
     },
-    "google/gson": {
+    "fasterxml__jackson-databind": {
+        "0.1": {
+            "jdk_version": "8",
+            "env_type": "maven",
+            "install": "mvn clean install -Dmaven.test.skip=true",  # Add install command for jackson-databind
+        }
+    },
+    "fasterxml__jackson-core": {
+        "0.1": {
+            "jdk_version": "8",
+            "env_type": "maven",
+            "install": "mvn clean install -Dmaven.test.skip=true",  # Add install command for jackson-core
+        }
+    },
+    "google__gson": {
         "0.1": {
             "jdk_version": "11",
             "env_type": "maven",
-            "install": "mvn clean install -Dmaven.test.skip=true"
+            "install": "mvn clean install -Dmaven.test.skip=true",  # Add install command for gson
         }
     },
-    "fasterxml/jackson-core": {
+    "fasterxml__jackson-dataformat-xml": {
         "0.1": {
             "jdk_version": "8",
             "env_type": "maven",
-            "install": "mvn clean install -Dmaven.test.skip=true"
+            "install": "mvn clean install -Dmaven.test.skip=true",  # Add install command for jackson-dataformat-xml
         }
     },
-    "fasterxml/jackson-databind": {
-        "0.1": {
-            "jdk_version": "8",
-            "env_type": "maven",
-            "install": "mvn clean install -Dmaven.test.skip=true"
-        }
-    },
-    "fasterxml/jackson-dataformat-xml": {
-        "0.1": {
-            "jdk_version": "8",
-            "env_type": "maven",
-            "install": "mvn clean install -Dmaven.test.skip=true"
-        }
-    },
-    "googlecontainertools/jib": {
+    "googlecontainertools__jib": {
         "0.1": {
             "jdk_version": "11",
             "env_type": "gradle",
-            "install": "./gradlew clean build"
+            "install": "./gradlew build",  # Add install command for jib
         }
-    }
+    },
 }
+
 
 # Constants - Task Instance Test Frameworks for Java Projects
 MAP_REPO_TO_TEST_FRAMEWORK = {
-    "apache/dubbo": "mvn clean test",
-    "google/gson": "mvn clean test",
-    "fasterxml/jackson-core": "mvn clean test",
-    "fasterxml/jackson-databind": "mvn clean test",
-    "fasterxml/jackson-dataformat-xml": "mvn clean test",
-    "googlecontainertools/jib": "./gradlew test"
+    "apache__dubbo": "mvn clean test",
+    "google__gson": "mvn clean test",
+    "fasterxml__jackson-core": "mvn clean test",
+    "fasterxml__jackson-databind": "mvn clean test",
+    "fasterxml__jackson-dataformat-xml": "mvn clean test",
+    "googlecontainertools__jib": "./gradlew test"
 }
 
 # Constants - Task Instance Requirements File Paths for Java Projects (if applicable)
+# Constants - Task Instance Requirements File Paths for Java Projects (if applicable)
 MAP_REPO_TO_REQS_PATHS = {
-    "apache/dubbo": ["pom.xml"],
-    "google/gson": ["pom.xml"],
-    "fasterxml/jackson-core": ["pom.xml"],
-    "fasterxml/jackson-databind": ["pom.xml"],
-    "fasterxml/jackson-dataformat-xml": ["pom.xml"],
-    "googlecontainertools/jib": ["build.gradle"]
+    "apache__dubbo": ["pom.xml"],  # Corrected repo name
+    "google__gson": ["pom.xml"],  # Corrected repo name
+    "fasterxml__jackson-core": ["pom.xml"],  # Corrected repo name
+    "fasterxml__jackson-databind": ["pom.xml"],  # Corrected repo name
+    "fasterxml__jackson-dataformat-xml": ["pom.xml"],  # Corrected repo name
+    "googlecontainertools__jib": ["build.gradle"],  # Corrected repo name
 }
 
 # Constants - Task Instance environment.yml File Paths (if applicable)

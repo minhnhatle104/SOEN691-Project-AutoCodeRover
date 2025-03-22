@@ -21,43 +21,6 @@ load_dotenv()
 logger = logging.getLogger("utils")
 
 
-def get_conda_env_names(conda_source: str, env: dict = None) -> list:
-    """
-    Get list of conda environment names for given conda path
-
-    Args:
-        conda_source (str): Path to conda executable
-    Returns:
-        env_names (list): List of conda environment names
-    """
-    # Get list of conda environments
-    try:
-        conda_envs = subprocess.run(
-            f"{conda_source} env list".split(" "), check=True, capture_output=True, text=True, env=env,
-        )
-    except subprocess.CalledProcessError as e:
-        print(f"Error: {e}")
-        print(f"Error stdout: {e.stdout}")
-        print(f"Error stderr: {e.stderr}")
-        raise e
-    output = conda_envs.stdout
-    lines = output.split("\n")
-    # Store environment names to list
-    env_names = []
-    for line in lines:
-        if line.startswith("#"):
-            continue
-        if line.strip() == "":
-            continue
-        parts = line.split()
-        if len(parts) == 2:
-            env_name = parts[0]
-        elif len(parts) == 1:
-            env_name = parts[0].split('/')[-1]
-        env_names.append(env_name)
-    return env_names
-
-
 def get_environment_yml(instance: dict, env_name: str, save_path: str = None) -> str:
     """
     Get environment.yml for given task instance
@@ -202,36 +165,14 @@ def get_requirements(instance: dict, save_path: str = None):
 
 def get_test_directives(instance: dict) -> list:
     """
-    Get test directives from the test_patch of a task instance
-
-    Args:
-        instance (dict): task instance
-    Returns:
-        directives (list): List of test directives
+    Get test file paths from test_patch (for Java repos).
     """
-    # For seq2seq code repos, testing command is fixed
-    if instance["repo"] == "swe-bench/humaneval":
-        return ["test.py"]
-
-    # Get test directives from test patch and remove non-test files
     diff_pat = r"diff --git a/.* b/(.*)"
     test_patch = instance["test_patch"]
     directives = re.findall(diff_pat, test_patch)
-    directives = [
-        d for d in directives if not any(d.endswith(ext) for ext in NON_TEST_EXTS)
-    ]
-
-    # For Django tests, remove extension + "tests/" prefix and convert slashes to dots (module referencing)
-    if instance["repo"] == "django/django":
-        directives_transformed = []
-        for d in directives:
-            d = d[: -len(".py")] if d.endswith(".py") else d
-            d = d[len("tests/") :] if d.startswith("tests/") else d
-            d = d.replace("/", ".")
-            directives_transformed.append(d)
-        directives = directives_transformed
-
+    directives = [d for d in directives if d.endswith(".java") and "test" in d.lower()]
     return directives
+
 
 
 def clone_repo(repo_name: str, path: str, token: str = None) -> bool:
