@@ -175,3 +175,4 @@ analysis/evaluation/*.pdf
 
 # Directories produced by setup script
 logs/
+testbed/
