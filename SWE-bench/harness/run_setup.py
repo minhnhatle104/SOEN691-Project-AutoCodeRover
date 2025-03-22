@@ -197,7 +197,7 @@ def save_setup_json_files(result_dir: str, setup_map: Dict, tasks_map: Dict):
     tasks_map_path = pjoin(result_dir, "tasks_map.json")
     with open(setup_map_path, "w") as f:
         json.dump(setup_map, f)
-    with open(pjoin(result_dir, "tasks_map.json"), "w") as f:
+    with open(tasks_map_path, "w") as f:
         json.dump(tasks_map, f)
     print("Done with setup.")
     print(f"setup_map is saved to {setup_map_path}")
