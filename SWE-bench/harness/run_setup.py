@@ -18,9 +18,6 @@ from constants import (
 from context_manager import ExecWrapper
 from utils import (
     clone_repo,
-    get_conda_env_names,
-    get_environment_yml,
-    get_requirements,
     get_test_directives,
 )
 
@@ -29,6 +26,8 @@ logging.basicConfig(
 )
 logger = logging.getLogger("run_setup")
 
+def normalize_repo_name(repo_full: str) -> str:
+    return repo_full.replace("/", "__")
 
 def create_fresh_dir(dir_name: str):
     if os.path.exists(dir_name):
@@ -39,38 +38,14 @@ def create_fresh_dir(dir_name: str):
 def create_if_not_exist(dir_name: str):
     if not os.path.exists(dir_name):
         os.makedirs(dir_name)
-
-
-def remove_conda_env_and_dir(env_name: str):
-    """
-    Completely remove conda env and its folder on disk.
-    """
+        
+def run_java_command(repo_path: str, cmd: str, env_name: str, description: str):
     exec_wrapper = ExecWrapper(
-        subprocess_args={
-            "check": True,
-            "shell": False,
-            "capture_output": True,
-            "text": True,
-        }
+        subprocess_args={"check": True, "shell": True, "capture_output": True, "text": True}
     )
-    # figure out which conda to use
-    conda_bin_path = os.getenv("CONDA_EXE")  # for calling conda
-    conda_bin_dir = os.path.dirname(conda_bin_path)
-    conda_env_dir = pjoin(os.path.dirname(conda_bin_dir), "envs")
-
-    # remove env with conda command
-    existing_env_list = get_conda_env_names(conda_bin_path)
-    if env_name in existing_env_list:
-        # env_name has already been created.
-        cmd = f"{conda_bin_path} remove -n {env_name} --all -y"
-        logger.info(f"[{env_name}] Removing old conda env {env_name}")
-        exec_wrapper(cmd.split(" "))
-
-    # remove potential dangling env folder
-    env_dir = pjoin(conda_env_dir, env_name)
-    if os.path.exists(env_dir):
-        logger.info(f"[{env_name}] Removing dangling conda env folder {env_dir}")
-        shutil.rmtree(env_dir)
+    full_cmd = f"cd {repo_path} && {cmd}"
+    logger.info(f"[{env_name}] Running {description}: {full_cmd}")
+    exec_wrapper(full_cmd)
 
 
 def create_conda_env(
@@ -94,15 +69,6 @@ def create_conda_env(
             "text": True,
         }
     )
-
-    # figure out which conda to use
-    conda_bin_path = os.getenv("CONDA_EXE")  # for calling conda
-    conda_bin_dir = os.path.dirname(conda_bin_path)
-    activate_path = pjoin(conda_bin_dir, "activate")  # for activate
-    deactivate_path = pjoin(conda_bin_dir, "deactivate")  # for deactivate
-
-    # if an old env with the same name exists, remove it
-    remove_conda_env_and_dir(env_name)
 
     # (1) Run any top-level installation commands if provided (currently empty)
     # TODO: ideally this should only be done once per repo; but now
@@ -154,34 +120,15 @@ def create_conda_env(
 
 
 def collect_install_instructions(repo_full: str, version: str) -> Tuple[List[str], str]:
-    """
-    Collect install instructions for a repo+version combination.
-
-    Returns:
-        A tuple of (pre_install, install) commands.
-        If a command is not available, it will be an empty list/string.
-    """
     specification = MAP_VERSION_TO_INSTALL[repo_full][version]
-    pre_install_cmds = []
-    install_cmd = ""
-    if "pre_install" in specification:
-        # pre_install is a list of commands
-        pre_install_cmds = specification["pre_install"]
-    if "install" in specification:
-        # install is just one command
-        install_cmd = specification["install"]
+    pre_install_cmds = specification.get("pre_install", [])
+    install_cmd = specification.get("install", "")
     return pre_install_cmds, install_cmd
 
-
 def collect_test_exec_cmd(repo_full: str, task_instance: Dict) -> str:
-    """
-    For a task instance, collect a list of instructions for running tests.
-    """
     test_type = MAP_REPO_TO_TEST_FRAMEWORK[repo_full]
     test_directives = get_test_directives(task_instance)
-    test_cmd = f"{test_type} {' '.join(test_directives)}"
-    return test_cmd
-
+    return f"{test_type} {' '.join(test_directives)}"
 
 def setup_one_repo_version(
     repo_full: str, repo_path: str, version: str, env_name: str, task: Dict
@@ -204,10 +151,7 @@ def setup_one_repo_version(
     )
     clone_repo(repo_full, repo_path)
     logger.info(f"[{env_name}] Cloned {repo_full} to {repo_path}")
-    create_conda_env(repo_full, version, repo_path, env_name, task)
-    logger.info(
-        f"[{env_name}] Created java environment {env_name} for {repo_full} {version}"
-    )
+
     # "install" and "pre_install" steps are per task;
     # we don't do them here, but instead collects the commands and write them out;
     # this has already been done at a previous step
@@ -222,10 +166,8 @@ def get_pr_link_for_task(task: Dict):
 
 
 def load_task_instances(swe_bench_tasks: str):
-    # for parquet version
     df = pd.read_parquet(swe_bench_tasks, engine="pyarrow")
     tasks = json.loads(df.to_json(orient="records"))
-    # now form a link to PR for each meta data entry
     for t in tasks:
         pr_link = get_pr_link_for_task(t)
         t["pr_link"] = pr_link
@@ -257,7 +199,6 @@ def save_setup_json_files(result_dir: str, setup_map: Dict, tasks_map: Dict):
         json.dump(setup_map, f)
     with open(tasks_map_path, "w") as f:
         json.dump(tasks_map, f)
-
     print("Done with setup.")
     print(f"setup_map is saved to {setup_map_path}")
     print(f"tasks_map is saved to {tasks_map_path}")
@@ -286,11 +227,11 @@ def main(
     """
     # since we are going to store testbed dirs for others to use, we should use absolute path
     testbed = os.path.abspath(testbed)
-    # if we just want to dump files, do not touch log and testbed dirs
     if not only_dump_files:
         create_fresh_dir(log_dir)
         create_fresh_dir(testbed)
     create_fresh_dir(result_dir)
+
     tasks = load_task_instances(swe_bench_tasks)
     # map instance_id to the actual task instance Dict
     tasks_map = {t[KEY_INSTANCE_ID]: t for t in tasks}
@@ -303,14 +244,11 @@ def main(
         with open(subset_file, "r") as f:
             selected_instances = [line.strip() for line in f.readlines()]
 
-    # keep all information for setting up each entry
     setup_entries = []
-    # iterates all tasks, decide which ones need setup,
-    # decide the path for their testbed folder, and save this path to task_map
     for instance_id, task in tasks_map.items():
         if subset_file is not None and instance_id not in selected_instances:
             continue
-        repo_full = task["repo"]  # "astropy/astropy"
+        repo_full = normalize_repo_name(task["repo"])  # "astropy/astropy"
         repo_short = instance_id.rsplit("-", 1)[0]  # "astropy"
         version = task["version"]  # "4.2"
         # name for both conda env and testbed folder
@@ -331,7 +269,6 @@ def main(
         # should really do setup
         setup_entries.append((repo_full, repo_path, version, env_name, task))
 
-    # check whether we are required to perform the actual setup
     if only_dump_files:
         save_setup_json_files(result_dir, setup_map, tasks_map)
         return
@@ -361,9 +298,7 @@ def main(
             pool.close()
             pool.join()
     finally:
-        # Done with the actual work.
         save_setup_json_files(result_dir, setup_map, tasks_map)
-
 
 if __name__ == "__main__":
     script_dir = os.path.dirname(os.path.realpath(__file__))
