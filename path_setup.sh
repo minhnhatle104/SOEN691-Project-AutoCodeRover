@@ -1,0 +1,5 @@
+PROJECT_PATH="$(pwd)" \
+ACR_PATH="$PROJECT_PATH/auto-code-rover" \
+SWE_BENCH_PATH="$PROJECT_PATH/SWE-bench" \
+SWE_BENCH_NUS_PATH="$PROJECT_PATH/SWE-bench-NUS" \
+MULTI_SWE_BENCH_PATH="$PROJECT_PATH/multi-swe-bench-env"
