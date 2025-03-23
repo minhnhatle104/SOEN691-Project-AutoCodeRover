@@ -11,10 +11,12 @@ Pre-requisites
 2. Conda (Anaconda or Miniconda)
 
 # Installation (Python)
+Clone the Repository
 ```bash
 git clone https://github.com/minhnhatle104/SOEN691-Project-AutoCodeRover
-
+```
 # Initialize Project Paths
+```bash
 cd SOEN691-Project-AutoCodeRover && source path_setup.sh
 ```
 
@@ -42,7 +44,7 @@ cd $SWE_BENCH_NUS_PATH
 conda activate swe-bench-nus
 ```
 
-# for **Single** Tasks
+### for **Single** Tasks
 ```bash
 echo "astropy__astropy-11693" > instance_id.txt # one Task Per Line
 python harness/run_setup.py --log_dir logs --testbed testbed --result_dir setup_result --subset_file instance_id.txt
@@ -64,14 +66,14 @@ setup_map is saved to setup_result/setup_map.json
 tasks_map is saved to setup_result/tasks_map.json
 ```
 
-# for **All** Tasks
+### for **All** Tasks
 ```bash
 python harness/run_setup.py --log_dir logs --testbed testbed --result_dir setup_result
 ```
 > **setup_map** is saved to `setup_result/setup_map.json` <br>
 > **tasks_map** is saved to `setup_result/tasks_map.json`
 
-# 3. Running AutoCodeRover
+## 3. Running AutoCodeRover
 ```bash
 cd $ACR_PATH
 
