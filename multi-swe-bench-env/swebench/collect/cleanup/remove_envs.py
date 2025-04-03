@@ -7,26 +7,6 @@ import subprocess
 from multiprocessing import Pool
 
 
-def get_conda_env_names(output: str) -> list:
-    """
-    Parse conda environments (`conda env list`) created for a particular conda installation
-
-    Args:
-        output (str): Output of `conda env list` command
-    """
-    lines = output.split("\n")
-    env_names = []
-    for line in lines:
-        if line.startswith("#"):
-            continue
-        if line.strip() == "":
-            continue
-        if " " in line:
-            env_name = line.split(" ")[0]
-            env_names.append(env_name)
-    return [x for x in env_names if len(x) > 0]
-
-
 def delete_folders_with_prefix(prefix, conda_path):
     """
     Find and rm folders with a particular prefix in the conda installation's env folder
@@ -79,14 +59,6 @@ if __name__ == "__main__":
         print(f"Error: {e}")
         print(f"Error output: {e.stderr.decode('utf-8')}")
         raise e
-    conda_envs_names = get_conda_env_names(conda_envs.stdout.decode("utf-8"))
-
-    # Remove conda environments in parallel
-    num_processes = 25
-    pool = Pool(num_processes)
-    pool.starmap(
-        remove_environment, zip(conda_envs_names, [args.prefix] * len(conda_envs_names))
-    )
 
     # Remove env folder with the same prefix
     print(

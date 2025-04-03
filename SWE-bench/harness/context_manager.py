@@ -1,5 +1,4 @@
 import logging, os, platform, subprocess
-
 from constants import (
     APPLY_PATCH_FAIL,
     APPLY_PATCH_PASS,
@@ -21,27 +20,20 @@ from tempfile import TemporaryDirectory
 from traceback import format_exc
 from utils import (
     clone_repo,
-    get_conda_env_names,
     get_environment_yml,
     get_requirements,
     get_test_directives,
 )
+from traceback import format_exc
 
 logging.basicConfig(
     level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s"
 )
 logger_testbed = logging.getLogger("testbed_context_manager")
 
-
 class ExecWrapper:
-    def __init__(
-        self,
-        subprocess_args: dict = None,
-    ):
-        if subprocess_args is None:
-            self.subprocess_args = {}
-        else:
-            self.subprocess_args = subprocess_args
+    def __init__(self, subprocess_args: dict = None):
+        self.subprocess_args = subprocess_args or {}
 
     def __call__(self, cmd, raise_error=True, **kwargs):
         try:
@@ -56,36 +48,18 @@ class ExecWrapper:
                 logger_testbed.error(f"Error traceback: {format_exc()}")
                 raise e
 
-
 class TestbedContextManager:
     def __init__(
         self,
         task_instances: list,
         log_dir: str,
-        conda_link: str = None,
-        path_conda: str = None,
         temp_dir: str = None,
         testbed: str = None,
         timeout: int = None,
         verbose: bool = False,
     ):
-        """
-        Initialize testbed context. Creates temporary directories and groups task instances
-        by repo/version.
-
-        Args:
-            task_instances (list): List of task instances
-            log_dir (str): Path to log directory
-            path_conda (str): Path to conda installation
-            testbed (str): Path to testbed directory
-            verbose (bool): Whether to show logs
-            timeout (int): Timeout for actions
-            temp_dir (str): Path to temporary directory
-        """
         logger_testbed.propagate = verbose
-        self.conda_link = conda_link
         self.log_dir = os.path.abspath(log_dir)
-        self.old_dir = os.getcwd()
         self.timeout = timeout
         self.verbose = verbose
         self.exec = ExecWrapper(
@@ -97,9 +71,7 @@ class TestbedContextManager:
             }
         )
 
-        # Create log, temp directories if they don't exist
         if not os.path.exists(self.log_dir):
-            logger_testbed.info(f"[Testbed] Creating log directory {self.log_dir}")
             os.makedirs(self.log_dir, exist_ok=True)
         if temp_dir is not None and not os.path.exists(temp_dir):
             logger_testbed.info(f"[Testbed] Creating temp directory {temp_dir}")
@@ -134,7 +106,6 @@ class TestbedContextManager:
         # Group repos by repo, then version
         self.task_instances_grouped = {}
         for instance in self.task_instances:
-            # Create test command from framework + directives
             test_type = MAP_REPO_TO_TEST_FRAMEWORK[instance["repo"]]
             test_directives = get_test_directives(instance)
             instance["test_cmd"] = f"{test_type} {' '.join(test_directives)}"
@@ -167,173 +138,19 @@ class TestbedContextManager:
         self._custom_restraints()
 
     def __enter__(self):
-        """
-        Set up testbed (conda environments, git repositories)
-        """
-        # If path_conda not provided, create temporary miniconda3 installation
-        is_osx_64 = False
-        if platform.system() == "Darwin" and platform.machine() == "arm64":
-            is_osx_64 = True
-        if self.temp_dir_conda is not None:
-            # Set up the paths for Miniconda
-            self.path_conda = os.path.join(self.path_conda, "miniconda3")
-            os.mkdir(self.path_conda)
-            miniconda_sh = os.path.join(self.path_conda, "miniconda.sh")
-            logger_testbed.info(
-                f"No conda path provided, creating temporary install in {self.path_conda}..."
-            )
-
-            # Download Miniconda installer
-            if self.conda_link is not None:
-                cmd_line_install_link = self.conda_link
-            elif platform.system() == "Darwin":
-                cmd_line_install_link = "https://repo.anaconda.com/miniconda/Miniconda3-py311_23.11.0-2-MacOSX-x86_64.sh"
-                if is_osx_64:
-                    cmd_line_install_link = "https://repo.anaconda.com/miniconda/Miniconda3-py311_23.11.0-2-MacOSX-arm64.sh"
-            elif platform.system() == "Linux":
-                cmd_line_install_link = "https://repo.anaconda.com/miniconda/Miniconda3-py311_23.11.0-2-Linux-x86_64.sh"
-                if platform.machine() == "aarch64":
-                    cmd_line_install_link = "https://repo.anaconda.com/miniconda/Miniconda3-py311_23.11.0-2-Linux-aarch64.sh"
-            else:
-                raise ValueError("Unknown computer platform " + platform.system())
-            download_cmd = [
-                "wget",
-                cmd_line_install_link,
-                "-O",
-                miniconda_sh,
-            ]
-            self.exec(download_cmd)
-
-            # Install Miniconda
-            install_cmd = ["bash", miniconda_sh, "-b", "-u", "-p", self.path_conda]
-            self.exec(install_cmd)
-            if is_osx_64:
-                condabin = os.path.join(self.path_conda, "bin", "conda")
-                config_cmd = [condabin, "config", "--env", "--set", "subdir", "osx-64"]
-                self.exec(config_cmd)
-
-            # Clean up the installer
-            os.remove(miniconda_sh)
-        logger_testbed.info(f"[Testbed] Using conda path {self.path_conda}")
-
-        # Set up conda executables, get existing environments
-        self.path_conda = os.path.abspath(self.path_conda)
-        conda_bin_path = os.path.join(self.path_conda, "bin")
-        shellenv = os.environ.copy()
-        shellenv["PATH"] = shellenv["PATH"] + os.pathsep + conda_bin_path
-        self.exec.subprocess_args["env"] = shellenv
-
-        path_activate = os.path.join(self.path_conda, "bin", "activate")
-        exec_type = "mamba" if "mamba" in self.path_conda else "conda"
-        exec_cmd = os.path.join(self.path_conda, "bin", exec_type)
-        env_list = get_conda_env_names(exec_cmd, shellenv)
-
-        # Set up testbed (environment, github repo) for each repo
         for repo, version_to_setup_ref in self.setup_refs.items():
-            repo_prefix = repo.replace("/", "__")
-
-            # Run any repo-level installation commands if provided
-            if repo in MAP_REPO_TO_INSTALL:
-                install_cmd = MAP_REPO_TO_INSTALL[repo]
-                logger_testbed.info(
-                    f"[Testbed] Running custom install command for {repo}: {install_cmd}"
-                )
-                self.exec(install_cmd)
-
-            # Create conda environment per version of the repo
-            for version, install in MAP_VERSION_TO_INSTALL[repo].items():
-                # Skip if none of the task instances are for this version
-                if version not in version_to_setup_ref:
-                    continue
-
-                # Name for both environment and github repo
-                env_name = f"{repo_prefix}__{version}"
-                logger_testbed.info(f"[Testbed] Setting up testbed for {env_name}")
-
-                # Clone github per repo/version
+            for version, instance in version_to_setup_ref.items():
+                env_name = f"{repo.replace('/', '__')}__{version}"
                 repo_path = os.path.join(self.testbed, env_name)
+
                 if not os.path.exists(repo_path):
                     clone_repo(repo, repo_path)
-                    logger_testbed.info(f"[Testbed] Cloned {repo} to {repo_path}")
-                else:
-                    logger_testbed.info(
-                        f"[Testbed] Repo for {repo_prefix} version {version} exists: {repo_path}; skipping"
-                    )
 
-                # Skip if conda environment already exists
-                if env_name in env_list:
-                    logger_testbed.info(
-                        f"[Testbed] Environment {env_name} already exists; skipping"
-                    )
-                    continue
-
-                # Get setup reference instance
-                setup_ref_instance = version_to_setup_ref[version]
-
-                # Create conda environment according to install instructinos
-                pkgs = install["packages"] if "packages" in install else ""
-                if pkgs == "requirements.txt":
-                    # Create environment
-                    cmd = (
-                        f"{exec_cmd} create -n {env_name} python={install['python']} -y"
-                    )
-                    logger_testbed.info(
-                        f"[Testbed] Creating environment {env_name}; Command: {cmd}"
-                    )
-                    self.exec(cmd.split(" "))
-
-                    # Install dependencies
-                    path_to_reqs = get_requirements(setup_ref_instance, self.testbed)
-                    cmd = f"source {path_activate} {env_name} && echo 'activate successful' && pip install -r {path_to_reqs}"
-                    logger_testbed.info(
-                        f"[Testbed] Installing dependencies for {env_name}; Command: {cmd}"
-                    )
-                    self.exec(cmd, shell=True)
-                    os.remove(path_to_reqs)
-                elif pkgs == "environment.yml":
-                    # Create environment from yml
-                    path_to_reqs = get_environment_yml(
-                        setup_ref_instance, env_name, self.testbed
-                    )
-                    if "no_use_env" in install and install["no_use_env"]:
-                        # `conda create` based installation
-                        cmd = f"{exec_cmd} create -c conda-forge -n {env_name} python={install['python']} -y"
-                        logger_testbed.info(
-                            f"[Testbed] Creating environment {env_name}; Command: {cmd}"
-                        )
-                        self.exec(cmd.split(" "))
-
-                        # Install dependencies
-                        cmd = f"{exec_cmd} env update -f {path_to_reqs}"
-                        logger_testbed.info(
-                            f"[Testbed] Installing dependencies for {env_name}; Command: {cmd}"
-                        )
-                        self.exec(cmd.split(" "))
-                    else:
-                        # `conda env create` based installation
-                        cmd = f"{exec_cmd} env create --file {path_to_reqs}"
-                        logger_testbed.info(
-                            f"[Testbed] Creating environment {env_name}; Command: {cmd}"
-                        )
-                        self.exec(cmd.split(" "))
-
-                    # Remove environment.yml
-                    os.remove(path_to_reqs)
-                else:
-                    # Create environment + install dependencies
-                    cmd = f"{exec_cmd} create -n {env_name} python={install['python']} {pkgs} -y"
-                    logger_testbed.info(
-                        f"[Testbed] Creating environment {env_name}; Command: {cmd}"
-                    )
-                    self.exec(cmd.split(" "))
-
-                # Install additional packages if specified
-                if "pip_packages" in install:
-                    cmd = f"source {path_activate} {env_name} && pip install {install['pip_packages']}"
-                    logger_testbed.info(
-                        f"[Testbed] Installing pip packages for {env_name}; Command: {cmd}"
-                    )
-                    self.exec(cmd, shell=True)
+                os.makedirs(os.path.join(repo_path, "setup_temp"), exist_ok=True)
+                install_cmd = MAP_VERSION_TO_INSTALL[repo][version].get("install", "")
+                if install_cmd:
+                    logger_testbed.info(f"[{env_name}] Running install command: {install_cmd}")
+                    self.exec(f"cd {repo_path} && {install_cmd}")
 
         return self
 
@@ -347,20 +164,17 @@ class TestbedContextManager:
         """
         distributed_tasks = []
         for repo, map_version_to_instances in self.task_instances_grouped.items():
-            repo_prefix = repo.replace("/", "__")
             for version, instances in map_version_to_instances.items():
-                env_name = f"{repo_prefix}__{version}"
-                task_set = {
-                    "conda_path": self.path_conda,
-                    "log_dir": self.log_dir,
+                env_name = f"{repo.replace('/', '__')}__{version}"
+                distributed_tasks.append({
                     "task_instances": instances,
+                    "log_dir": self.log_dir,
                     "testbed": os.path.join(self.testbed, env_name),
                     "timeout": self.timeout,
                     "venv": env_name,
                     "version": version,
                     "verbose": self.verbose,
-                }
-                distributed_tasks.append(task_set)
+                })
         return distributed_tasks
 
     def _custom_restraints(self):
@@ -382,25 +196,14 @@ class TestbedContextManager:
     def __exit__(self, exc_type, exc_value, exc_traceback):
         if self.temp_dir_work is not None:
             self.temp_dir_work.cleanup()
-        if self.temp_dir_conda is not None:
-            self.temp_dir_conda.cleanup()
 
 
 logger_taskenv = logging.getLogger("taskenv_context_manager")
 
-
 class TaskEnvContextManager:
     def __init__(
-        self,
-        instance: dict,
-        testbed: str,
-        venv: str,
-        log_dir: str,
-        conda_path: str,
-        verbose: bool = False,
-        timeout: int = None,
-        is_eval: bool = False,
-        log_suffix: str = None,
+        self, instance: dict, testbed: str, venv: str, log_dir: str,
+        verbose: bool = False, timeout: int = None, is_eval: bool = False, log_suffix: str = None
     ):
         """
         Sets up execution context for a single task instance
@@ -410,7 +213,6 @@ class TaskEnvContextManager:
             testbed (str): Path to testbed directory
             venv (str): Name of conda environment (should exist in conda_path)
             log_dir (str): Path to log directory
-            conda_path (str): Path to conda installation
             verbose (bool): Whether to show logs
             timeout (int): Timeout for actions
             is_eval (bool): Whether this is for evaluating a model on SWE Bench
@@ -418,54 +220,31 @@ class TaskEnvContextManager:
         """
         logger_taskenv.propagate = verbose
         self.instance = instance
-        self.conda_path = conda_path
-        self.cwd = os.getcwd()
-        self.is_eval = is_eval
         self.testbed = testbed
         self.testbed_name = testbed.split("/")[-1]
         self.venv = venv
+        self.timeout = timeout
+        self.is_eval = is_eval
 
-        # Log file naming
         log_file_name = (
             f"{instance[KEY_INSTANCE_ID]}.{instance[KEY_MODEL]}.eval.log"
-            if self.is_eval
-            else f"{instance[KEY_INSTANCE_ID]}.log"
+            if is_eval else f"{instance[KEY_INSTANCE_ID]}.log"
         )
-        if log_suffix is not None:
+        if log_suffix:
             log_file_name = (
                 f"{instance[KEY_INSTANCE_ID]}.{instance[KEY_MODEL]}.{log_suffix}.eval.log"
-                if self.is_eval
-                else f"{instance[KEY_INSTANCE_ID]}.{log_suffix}.log"
+                if is_eval else f"{instance[KEY_INSTANCE_ID]}.{log_suffix}.log"
             )
         self.log_file = os.path.join(log_dir, log_file_name)
-
-        self.cmd_activate = (
-            f"source {os.path.join(self.conda_path, 'bin', 'activate')} "
-            + f"{self.venv} && echo 'activate successful'"
-        )
-        self.timeout = timeout
-
-        # shellenv = os.environ.copy()
-        # condabinpath = os.path.join(self.conda_path, "bin")
-        # shellenv["PATH"] = shellenv["PATH"] + os.pathsep + condabinpath
-        self.exec = ExecWrapper(
-            subprocess_args={
-                "check": True,
-                "shell": False,
-                "capture_output": True,
-                "text": True,
-                # "env": shellenv,
-            }
-        )
+        self.cwd = os.getcwd()
+        self.exec = ExecWrapper(subprocess_args={"check": True, "shell": True, "capture_output": True, "text": True})
 
     def __enter__(self):
-        """
-        Enter task environment, set up log file
-        """
         os.chdir(self.testbed)
         with open(self.log_file, "w") as f:
             f.write(
-                f"Task Metadata:\n\t- Instance ID: {self.instance[KEY_INSTANCE_ID]}\n\t- Testbed: {self.testbed}\n\t- Virtual Env.: {self.venv}\n"
+                f"Task Metadata:\n\t- Instance ID: {self.instance[KEY_INSTANCE_ID]}\n"
+                f"\t- Testbed: {self.testbed}\n\t- Environment: {self.venv}\n"
             )
             if self.is_eval:
                 f.write(f"\t- Evaluation Model: {self.instance[KEY_MODEL]}\n")
@@ -701,7 +480,7 @@ class TaskEnvContextManager:
                 f"[{self.testbed_name}] [{instance[KEY_INSTANCE_ID]}] Test script run failed"
             )
             with open(self.log_file, "a") as f:
-                f.write(f"{TESTS_ERROR}: {e}")
+                f.write(f"{TESTS_ERROR}: {e}\n")
             return False
 
     def __exit__(self, exc_type, exc_value, exc_traceback):
