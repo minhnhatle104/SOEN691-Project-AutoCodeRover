@@ -341,8 +341,10 @@ Please refer to [EXPERIMENT.md](EXPERIMENT.md) for information on experiment rep
 ## ✉️ Contacts
 
 For any queries, you are welcome to open an issue.
-Alternatively, contact us at acr@sonarsource.com
 
+Alternatively, contact us at:
+* ridwan.shariffdeen@sonarsource.com
+* martin.mirchev@sonarsource.com
 
 ## Acknowledgements
 
