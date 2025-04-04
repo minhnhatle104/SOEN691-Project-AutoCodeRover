@@ -1,8 +1,8 @@
 """
-Perform validation of a patch, on a given task instance.
+Perform validation of a patch, on a given Java task instance.
 """
 
-import ast
+import javalang
 import itertools
 import json
 import shlex
@@ -31,15 +31,6 @@ def perfect_angelic_debug(
 ) -> tuple[
     set[tuple[str, MethodId]], set[tuple[str, MethodId]], set[tuple[str, MethodId]]
 ]:
-    """Do perfect angelic debugging and return a list of incorrect fix locations.
-
-    Args:
-        task_id: the task id, used to find developer patch
-        diff_file: path of diff file
-
-    Returns:
-        A list of (filename, MethodId) that should not have been changed by diff_file
-    """
     return compare_fix_locations(
         diff_file, get_developer_patch_file(task_id), project_path
     )
@@ -50,15 +41,6 @@ def compare_fix_locations(
 ) -> tuple[
     set[tuple[str, MethodId]], set[tuple[str, MethodId]], set[tuple[str, MethodId]]
 ]:
-    """Compare the changed methods in two diff files
-
-    Args:
-        diff_file: path to diff file
-        dev_diff_file: path to a "correct" diff file
-
-    Returns:
-        list of (filename, MethodId) that are changed in diff_file but not in dev_diff_file
-    """
     methods_map = get_changed_methods(diff_file, project_path)
     dev_methods_map = get_changed_methods(dev_diff_file, project_path)
 
@@ -117,7 +99,6 @@ def get_changed_methods(
     orig_definitions: dict[tuple[str, MethodId], str] = {}
     for file in changed_files:
         def_map = collect_method_definitions(Path(project_path, file))
-
         for method_id, definition in def_map.items():
             orig_definitions[(file, method_id)] = definition
 
@@ -138,7 +119,6 @@ def get_changed_methods(
     new_definitions: dict[tuple[str, MethodId], str] = {}
     for file in changed_files:
         def_map = collect_method_definitions(Path(temp_dir, file))
-
         for method_id, definition in def_map.items():
             new_definitions[(file, method_id)] = definition
 
@@ -153,39 +133,37 @@ def get_changed_methods(
     return result
 
 
-def collect_method_definitions(file: str | PathLike) -> dict[MethodId, str]:
-    if not str(file).endswith(".py"):
-        return {}
-
-    collector = MethodDefCollector()
-
-    source = Path(file).read_text()
-    tree = ast.parse(source, file)
-
-    collector.visit(tree)
-    return collector.def_map
-
-
-class MethodDefCollector(ast.NodeVisitor):
+class JavaMethodDefCollector:
     def __init__(self):
         self.def_map: dict[MethodId, str] = {}
         self.class_name = ""
 
-    def calc_method_id(self, method_name: str) -> MethodId:
-        return MethodId(self.class_name, method_name)
+    def collect(self, file_path: str):
+        try:
+            source = Path(file_path).read_text()
+            tree = javalang.parse.parse(source)
+        except Exception as e:
+            print(f"[ERROR] Failed to parse {file_path}: {e}")
+            return
 
-    def visit_ClassDef(self, node: ast.ClassDef) -> None:
-        self.class_name = node.name
-        super().generic_visit(node)
-        self.class_name = ""
+        for _, node in tree.filter(javalang.tree.ClassDeclaration):
+            self.class_name = node.name
+            self._visit_class(node)
 
-    def visit_FunctionDef(self, node: ast.FunctionDef) -> None:
-        method_id = self.calc_method_id(node.name)
-        self.def_map[method_id] = ast.unparse(node)
+    def _visit_class(self, class_node: javalang.tree.ClassDeclaration):
+        for member in class_node.body:
+            if isinstance(member, javalang.tree.MethodDeclaration):
+                self._visit_method(member)
 
-    def visit_AsyncFunctionDef(self, node: ast.AsyncFunctionDef) -> None:
-        method_id = self.calc_method_id(node.name)
-        self.def_map[method_id] = ast.unparse(node)
+    def _visit_method(self, method_node: javalang.tree.MethodDeclaration):
+        method_id = MethodId(self.class_name, method_node.name)
+        self.def_map[method_id] = str(method_node)
+
+
+def collect_method_definitions(file: str | PathLike) -> dict[MethodId, str]:
+    collector = JavaMethodDefCollector()
+    collector.collect(str(file))
+    return collector.def_map
 
 
 def evaluate_patch(
@@ -219,8 +197,6 @@ def evaluate_patch(
                 f"Angelic debugging not implemented for {type(task).__name__}"
             )
 
-        # FIXME: perfect_angelic_debug has changed since this is written. Fix this
-        # if angelic debugging is ever used again.
         incorrect_locations = perfect_angelic_debug(
             task.task_id, diff_file, task.project_path
         )

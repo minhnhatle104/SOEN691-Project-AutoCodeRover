@@ -17,9 +17,7 @@ from loguru import logger
 # from app.api.python.validation import PythonValidator
 from app.task import Task
 
-logger.info("🚀 Initialized ProjectApiManager for task: {}", task.task_id)
-logger.info("📂 Project path: {}", task.project_path)
-logger.info("📁 Output directory: {}", self.output_dir)
+
 
 
 class ProjectApiManager:
@@ -35,6 +33,10 @@ class ProjectApiManager:
 
         # record layered API calls
         self.tool_call_layers: list[list[Mapping]] = []
+        
+        logger.info("🚀 Initialized ProjectApiManager for task: {}", task.task_id)
+        logger.info("📂 Project path: {}", task.project_path)
+        logger.info("📁 Output directory: {}", self.output_dir)
 
     ###################################################################
     ########################## API functions ##########################

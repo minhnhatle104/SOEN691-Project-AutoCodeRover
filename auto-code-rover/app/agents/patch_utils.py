@@ -200,10 +200,10 @@ class Writable(TextIO):
 
 
 def lint_python_content(content: str) -> bool:
-    """Check if python content lints OK.
+    """Check if java content lints OK.
 
     Args:
-        content: python file content
+        content: java file content
 
     Returns: True if the contents passes linting, False otherwise.
 

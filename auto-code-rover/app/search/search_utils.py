@@ -19,7 +19,6 @@ def is_test_file(file_path: str) -> bool:
 
 
 def find_java_files(dir_path: str) -> list[str]:
-    def find_python_files(dir_path: str) -> list[str]:
     """Get all .java files recursively from a directory.
 
     Skips files that are obviously not from the source code, such third-party library code.
@@ -39,15 +38,40 @@ def find_java_files(dir_path: str) -> list[str]:
     return res
 
 
-def parse_class_def_args(source: str, node: javalang.tree.ClassDeclaration) -> list[str]:
-    return [t.name for t in node.extends or []] + [t.name for t in node.implements or []]
+def parse_class_def_args(file_content: str, node: javalang.tree.ClassDeclaration):
+    try:
+        def get_name(t):
+            if isinstance(t, tuple):
+                t = t[1]  # Unpack (position, type)
+            return getattr(t, "name", None)
+
+        super_classes = []
+
+        if node.extends:
+            if isinstance(node.extends, list):
+                super_classes += [get_name(t) for t in node.extends]
+            else:
+                super_classes.append(get_name(node.extends))
+
+        if node.implements:
+            super_classes += [get_name(t) for t in node.implements]
+
+        return super_classes
+
+    except Exception as e:
+        print(f"[ERROR] parse_class_def_args for class `{node.name}`: {e}")
+        return []
+
+
 
 
 def parse_java_file(file_full_path: str):
+    print(f"[INFO] Parsing file: {file_full_path}")
     try:
         file_content = Path(file_full_path).read_text()
         tree = javalang.parse.parse(file_content)
-    except Exception:
+    except Exception as e:
+        print(f"[ERROR] Failed to parse file: {file_full_path} - {e}")
         return None
 
     classes = []
@@ -56,19 +80,26 @@ def parse_java_file(file_full_path: str):
     class_relation_map = {}
 
     for _, node in tree.filter(javalang.tree.ClassDeclaration):
-        class_name = node.name
-        start_lineno = node.position.line if node.position else 1
-        end_lineno = start_lineno + len(str(node).splitlines())
-        classes.append((class_name, start_lineno, end_lineno))
-        class_relation_map[(class_name, start_lineno, end_lineno)] = parse_class_def_args(file_content, node)
+        try:
+            class_name = node.name
+            start_lineno = node.position.line if node.position else 1
+            end_lineno = start_lineno + len(str(node).splitlines())
 
-        methods = []
-        for member in node.body:
-            if isinstance(member, javalang.tree.MethodDeclaration):
-                m_start = member.position.line if member.position else start_lineno
-                m_end = m_start + len(str(member).splitlines())
-                methods.append((member.name, m_start, m_end))
-        class_to_funcs[class_name] = methods
+            print(f"[INFO] Found class: {class_name} ({start_lineno}-{end_lineno})")
+
+            classes.append((class_name, start_lineno, end_lineno))
+            class_relation_map[(class_name, start_lineno, end_lineno)] = parse_class_def_args(file_content, node)
+
+            methods = []
+            for member in node.body:
+                if isinstance(member, javalang.tree.MethodDeclaration):
+                    m_start = member.position.line if member.position else start_lineno
+                    m_end = m_start + len(str(member).splitlines())
+                    methods.append((member.name, m_start, m_end))
+            class_to_funcs[class_name] = methods
+        except Exception as e:
+            print(f"[ERROR] Problem in class parsing: {e}")
+            continue
 
     return classes, class_to_funcs, top_level_funcs, class_relation_map
 

@@ -50,7 +50,7 @@ Return the patch in the format below.
 Within `<file></file>`, replace `...` with actual file path.
 Within `<original></original>`, replace `...` with the original code snippet from the program.
 Within `<patched></patched>`, replace `...` with the fixed version of the original code.
-When adding orignal code and updated code, pay attention to indentation, as the code is in Python.
+When adding orignal code and updated code, pay attention to indentation, as the code is in Java.
 You can write multiple modifications if needed.
 
 Example format:

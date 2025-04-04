@@ -33,7 +33,7 @@ get_code_around_line(file_path: str, line_number: int, window_size: int)
 Provide your answer in JSON structure like this, you should ignore the argument placeholders in api calls.
 For example, search_code(code_str="str") should be search_code("str")
 search_method_in_file("method_name", "path.to.file") should be search_method_in_file("method_name", "path/to/file")
-Make sure each API call is written as a valid python expression.
+Make sure each API call is written as a valid java expression.
 
 {
     "API_calls": ["api_call_1(args)", "api_call_2(args)", ...],
