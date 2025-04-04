@@ -17,9 +17,6 @@ from loguru import logger
 # from app.api.python.validation import PythonValidator
 from app.task import Task
 
-
-
-
 class ProjectApiManager:
     def __init__(self, task: Task, output_dir: str):
         # for logging of this task instance

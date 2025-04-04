@@ -175,22 +175,16 @@ def repo_reset_and_clean_checkout(commit_hash: str) -> None:
     )
 
 
-def run_script_in_conda(command: str, env_name: str = "", **kwargs) -> subprocess.CompletedProcess:
-    """
-    Java version - runs Maven/Gradle commands directly without conda
-    """
-    log_and_print(f"[Java Mode] Running command: {command}")
-    return subprocess.run(command, shell=True, **kwargs)
+def run_script_in_conda(command: str, env_name: str = "", is_java: bool = False, **kwargs):
+    if is_java or 'mvn' in command or 'gradle' in command:
+        log_and_print(f"[Java] Running: {command}")
+        return subprocess.run(command, shell=True, **kwargs)
 
 
-def run_string_cmd_in_conda(
-    command: str, env_name: str = "", **kwargs
-) -> subprocess.CompletedProcess:
-    """
-    Java version - runs shell commands directly without conda
-    """
-    log_and_print(f"[Java Mode] Running command directly: {command}")
-    return subprocess.run(command, shell=True, **kwargs)
+def run_string_cmd_in_conda(command: str, env_name: str = "", is_java: bool = False, **kwargs):
+    if is_java or 'mvn' in command or 'gradle' in command:
+        log_and_print(f"[Java] Running: {command}")
+        return subprocess.run(command, shell=True, **kwargs)
 
 
 
