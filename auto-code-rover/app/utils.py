@@ -175,35 +175,23 @@ def repo_reset_and_clean_checkout(commit_hash: str) -> None:
     )
 
 
-def run_script_in_conda(
-    args: list[str], env_name: str, **kwargs
-) -> subprocess.CompletedProcess:
+def run_script_in_conda(command: str, env_name: str = "", **kwargs) -> subprocess.CompletedProcess:
     """
-    Run a python command in a given conda environment.
+    Java version - runs Maven/Gradle commands directly without conda
     """
-    cmd = ["conda", "run", "-n", env_name, "python", *args]
-    return subprocess.run(cmd, **kwargs)
+    log_and_print(f"[Java Mode] Running command: {command}")
+    return subprocess.run(command, shell=True, **kwargs)
 
 
 def run_string_cmd_in_conda(
-    command: str, env_name: str, **kwargs
+    command: str, env_name: str = "", **kwargs
 ) -> subprocess.CompletedProcess:
     """
-    Run a complete command in a given conda environment, where the command is a string.
-
-    This is useful when the command to be run contains &&, etc.
-
-    NOTE: use `conda activate` instead of `conda run` in this verison, so that we can
-          run commands that contain `&&`, etc.
+    Java version - runs shell commands directly without conda
     """
-    conda_bin_path = os.getenv("CONDA_EXE")  # for calling conda
-    if conda_bin_path is None:
-        raise RuntimeError("Env variable CONDA_EXE is not set")
-    conda_root_dir = pdirname(pdirname(conda_bin_path))
-    conda_script_path = pjoin(conda_root_dir, "etc", "profile.d", "conda.sh")
-    conda_cmd = f"source {conda_script_path} ; conda activate {env_name} ; {command} ; conda deactivate"
-    log_and_print(f"Running command: {conda_cmd}")
-    return subprocess.run(conda_cmd, shell=True, **kwargs)
+    log_and_print(f"[Java Mode] Running command directly: {command}")
+    return subprocess.run(command, shell=True, **kwargs)
+
 
 
 def create_dir_if_not_exists(dir_path: str):

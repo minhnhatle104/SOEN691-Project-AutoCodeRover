@@ -55,7 +55,7 @@ class SearchBackend:
         value is a list of tuples.
         This is for fast lookup whenever we receive a query.
         """
-        self._update_indices(*self._build_python_index(self.project_path))
+        self._update_indices(*self._build_java_index(self.project_path))
 
     def _update_indices(
         self,
@@ -73,7 +73,7 @@ class SearchBackend:
 
     @classmethod
     @cache
-    def _build_python_index(cls, project_path: str) -> tuple[
+    def _build_java_index(cls, project_path: str) -> tuple[
         ClassIndexType,
         ClassFuncIndexType,
         FuncIndexType,
@@ -85,15 +85,15 @@ class SearchBackend:
         function_index: FuncIndexType = defaultdict(list)
         class_relation_index: ClassRelationIndexType = defaultdict(list)
 
-        py_files = search_utils.find_python_files(project_path)
+        java_files = search_utils.find_java_files(project_path)
         # holds the parsable subset of all py files
-        parsed_py_files = []
-        for py_file in py_files:
-            file_info = search_utils.parse_python_file(py_file)
+        parsed_java_files = []
+        for py_file in java_files:
+            file_info = search_utils.parse_java_file(py_file)
             if file_info is None:
                 # parsing of this file failed
                 continue
-            parsed_py_files.append(py_file)
+            parsed_java_files.append(py_file)
             # extract from file info, and form search index
             classes, class_to_funcs, top_level_funcs, class_relation_map = file_info
 
@@ -119,7 +119,7 @@ class SearchBackend:
             class_func_index,
             function_index,
             class_relation_index,
-            parsed_py_files,
+            parsed_java_files,
         )
 
     def _file_line_to_class_and_func(
@@ -212,7 +212,7 @@ class SearchBackend:
         result.extend(class_res)
         return result
 
-    def _get_candidate_matched_py_files(self, target_file_name: str):
+    def _get_candidate_matched_java_files(self, target_file_name: str):
         """
         Search for files in the project that may match target_file_name.
 
@@ -329,7 +329,7 @@ class SearchBackend:
         search_res: list[SearchResult] = []
 
         # (1) check whether we can get the file
-        candidate_py_abs_paths = self._get_candidate_matched_py_files(file_name)
+        candidate_py_abs_paths = self._get_candidate_matched_java_files(file_name)
         if not candidate_py_abs_paths:
             tool_output = f"Could not find file {file_name} in the codebase."
             return tool_output, search_res, False
@@ -372,8 +372,8 @@ class SearchBackend:
         # (1) check whether we can get the file
         # supports both when file_name is relative to project root, and when
         # it is just a short name
-        candidate_py_abs_paths = self._get_candidate_matched_py_files(file_name)
-        # print(candidate_py_files)
+        candidate_py_abs_paths = self._get_candidate_matched_java_files(file_name)
+        # print(candidate_java_files)
         if not candidate_py_abs_paths:
             tool_output = f"Could not find file {file_name} in the codebase."
             return tool_output, [], False
@@ -540,14 +540,14 @@ class SearchBackend:
         """
         code_str = code_str.removesuffix(")")
 
-        candidate_py_files = [f for f in self.parsed_files if f.endswith(file_name)]
-        if not candidate_py_files:
+        candidate_java_files = [f for f in self.parsed_files if f.endswith(file_name)]
+        if not candidate_java_files:
             tool_output = f"Could not find file {file_name} in the codebase."
             return tool_output, [], False
 
         # start searching for code in the filtered files
         search_res: list[SearchResult] = []
-        for file_path in candidate_py_files:
+        for file_path in candidate_java_files:
             searched_line_and_code: list[tuple[int, str]] = (
                 search_utils.get_code_region_containing_code(file_path, code_str)
             )
@@ -601,7 +601,7 @@ class SearchBackend:
         window_size = int(window_size_str)
 
         # (1) check whether we can get the file
-        candidate_py_abs_paths = self._get_candidate_matched_py_files(file_name)
+        candidate_py_abs_paths = self._get_candidate_matched_java_files(file_name)
         if not candidate_py_abs_paths:
             tool_output = f"Could not find file {file_name} in the codebase."
             return tool_output, [], False
@@ -661,15 +661,15 @@ class SearchBackend:
             - file_name: relevant path to the file.
         """
         # check whether we can get the file
-        candidate_py_files = [f for f in self.parsed_files if f.endswith(file_name)]
-        if not candidate_py_files:
+        candidate_java_files = [f for f in self.parsed_files if f.endswith(file_name)]
+        if not candidate_java_files:
             tool_output = f"Could not find file {file_name} in the codebase."
             return tool_output, [], False
 
         # NOTE: sometimes there can be multiple files.
         # To make the execution safe, we just take the first one
 
-        file_path = candidate_py_files[0]
+        file_path = candidate_java_files[0]
         file_content = Path(file_path).read_text()
 
         file_length = len(file_content.splitlines())

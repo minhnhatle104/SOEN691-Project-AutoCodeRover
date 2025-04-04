@@ -103,6 +103,7 @@ def run_one_task(task: Task, output_dir: str, model_names: Iterable[str]) -> boo
         api_manager (ProjectApiManager): The already-initialized API manager.
         problem_stmt (str): The original problem statement submitted to the task issue.
     """
+
     assert model_names
 
     model_name_cycle = cycle(model_names)
@@ -144,6 +145,14 @@ def run_one_task(task: Task, output_dir: str, model_names: Iterable[str]) -> boo
 def select_patch(task: Task, output_dir: str | PathLike) -> tuple[str, dict]:
 
     patches = natsorted(list(Path(output_dir).glob("**/extracted_patch_*.diff")))
+    
+    if not patches:
+        logger.warning(f"No extracted_patch_*.diff files found in {output_dir}")
+        return "", {
+            "selected_patch": None,
+            "reason": "no-extracted-patches",
+            "agent_comment": None,
+        }
 
     # TODO: These candidate patches must have been dismissed by reviewer. Maybe an
     # assertion should be added to confirm this.
@@ -263,56 +272,61 @@ def may_pass_regression_tests(task: Task, patch_file: str | PathLike) -> bool:
 def _run_one_task(
     output_dir: str, api_manager: ProjectApiManager, problem_stmt: str
 ) -> bool:
+    logger.info("======== AutoCodeRover started for task ========")
     print_banner("Starting AutoCodeRover on the following issue")
     print_issue(problem_stmt)
 
+    logger.info("Creating TestAgent...")
     test_agent = TestAgent(api_manager.task, output_dir)
 
     repro_result_map = {}
     repro_stderr = ""
     reproduced = False
     reproduced_test_content = None
+
+    logger.info("Attempting to write reproducing test...")
     try:
         test_handle, test_content, orig_repro_result = (
             test_agent.write_reproducing_test_without_feedback()
         )
+        logger.info("Reproducer written: handle = {}", test_handle)
         test_agent.save_test(test_handle)
+        logger.info("Reproducer saved")
 
         coord = (PatchAgent.EMPTY_PATCH_HANDLE, test_handle)
         repro_result_map[coord] = orig_repro_result
 
         if orig_repro_result.reproduced:
+            logger.info("Reproducer actually reproduces the bug")
             repro_stderr = orig_repro_result.stderr
             reproduced = True
             reproduced_test_content = test_content
-        # TODO: utilize the test for localization
+        else:
+            logger.warning("Reproducer does NOT reproduce the issue")
     except NoReproductionStep:
-        logger.info(
-            "Test agent decides that the issue statement does not contain "
-            "reproduction steps; skipping reproducer tracing"
-        )
+        logger.warning("No reproduction steps found by TestAgent")
     except InvalidLLMResponse:
-        logger.warning("Failed to write a reproducer test; skipping reproducer tracing")
+        logger.warning("Invalid response while writing reproducer. Skipping.")
 
     if config.enable_sbfl:
+        logger.info("Running SBFL...")
         sbfl_result, *_ = api_manager.fault_localization()
     else:
         sbfl_result = ""
+        logger.info("SBFL disabled. Skipping fault localization.")
 
-    bug_locs: list[BugLocation]
+    logger.info("Starting bug location search...")
     bug_locs, search_msg_thread = api_manager.search_manager.search_iterative(
         api_manager.task, sbfl_result, repro_stderr, reproduced_test_content
     )
-
     logger.info("Search completed. Bug locations: {}", bug_locs)
 
-    # logger.info("Additional class context code: {}", class_context_code)
-    # done with search; dump the tool calls used for recording
     api_manager.search_manager.dump_tool_call_layers_to_file()
+    logger.info("Tool call layers dumped")
 
-    # Write patch
+    # Start Patch Generation
     print_banner("PATCH GENERATION")
-    logger.debug("Gathered enough information. Invoking write_patch.")
+    logger.info("Creating ReviewManager for patch generation")
 
     review_manager = ReviewManager(
         search_msg_thread,
@@ -324,20 +338,25 @@ def _run_one_task(
         repro_result_map,
     )
 
+    logger.info("ReviewManager ready. Starting patch generation...")
     if config.reproduce_and_review and reproduced:
         try:
-            return write_patch_iterative_with_review(
+            logger.info("Reproducer is valid. Using write_patch_iterative_with_review()")
+            success = write_patch_iterative_with_review(
                 api_manager.task, output_dir, review_manager
             )
-        # this exception can arise when writing new reproducers
+            logger.info("Patch generation (with review) complete. Success: {}", success)
+            return success
         except NoReproductionStep:
-            pass
+            logger.warning("No reproduction step during patch with review")
 
-    result = write_patch_iterative(api_manager.task, output_dir, review_manager)
-    logger.info(
-        "Invoked write_patch. Since there is no reproducer, the workflow will be terminated."
-    )
-    return result
+    logger.info("Using fallback: write_patch_iterative() without review")
+    success = write_patch_iterative(api_manager.task, output_dir, review_manager)
+
+    logger.info("Patch generation (without review) complete. Success: {}", success)
+    logger.info("======== AutoCodeRover finished for task ========")
+    return success
+
 
 
 if __name__ == "__main__":

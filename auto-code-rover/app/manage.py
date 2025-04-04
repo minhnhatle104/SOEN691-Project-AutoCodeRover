@@ -10,9 +10,16 @@ from app.agents import agent_reproducer
 from app.analysis import sbfl
 from app.analysis.sbfl import NoCoverageData
 from app.search.search_manage import SearchManager
+from loguru import logger
+
+
 
 # from app.api.python.validation import PythonValidator
 from app.task import Task
+
+logger.info("🚀 Initialized ProjectApiManager for task: {}", task.task_id)
+logger.info("📂 Project path: {}", task.project_path)
+logger.info("📁 Output directory: {}", self.output_dir)
 
 
 class ProjectApiManager:
