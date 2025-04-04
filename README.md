@@ -49,3 +49,14 @@
     --task-list-file ../SWE-bench/tasks.txt \
     --num-processes 1
 ```
+
+### ✅ Step 3: Use swebench.harness.run_evaluation to evaluate your predictions on Multi-SWE-bench:
+
+```bash
+  python -m swebench.harness.run_evaluation \
+    --dataset_name Daoguang/Multi-SWE-bench \
+    --predictions_path <path_to_predictions> \
+    --max_workers <num_workers> \
+    --run_id <run_id>
+```
+
