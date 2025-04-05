@@ -2,6 +2,10 @@
 The main driver.
 """
 
+"""
+The main driver.
+"""
+
 import json
 import logging
 import platform
@@ -36,6 +40,7 @@ from app.task import SweTask, Task
 
 
 def main():
+    logger.info("Registering all models...")
     register_all_models()
     parser = ArgumentParser()
 
@@ -74,25 +79,29 @@ def main():
 
     args = parser.parse_args()
 
+    logger.info(f"Parsed arguments: {args}")
+
     ## common options
     config.output_dir = args.output_dir
     if config.output_dir is not None:
         config.output_dir = abspath(config.output_dir)
+    logger.info(f"Set output directory to {config.output_dir}")
+
     num_processes: int = int(args.num_processes)
-    # set whether brief or verbose log
     print_stdout: bool = not args.no_print
     log.print_stdout = print_stdout
+    logger.info(f"Print to stdout: {print_stdout}")
+    logger.info(f"Number of processes: {num_processes}")
 
-    # model related
     config.models = list(chain.from_iterable(args.model))
     if not config.models:
         config.models.append("gpt-3.5-turbo-0125")
+    logger.info(f"Configured models: {config.models}")
     common.set_model(config.models[0])
 
-    # FIXME: make temperature part of the Model class
     common.MODEL_TEMP = args.model_temperature
+    logger.info(f"Model temperature set to: {common.MODEL_TEMP}")
 
-    # acr related
     config.conv_round_limit = args.conv_round_limit
     config.enable_sbfl = args.enable_sbfl
     config.enable_validation = args.enable_validation
@@ -102,27 +111,33 @@ def main():
     config.only_reproduce = args.reproduce
 
     subcommand = getattr(args, subparser_dest_attr_name)
+    logger.info(f"Running subcommand: {subcommand}")
+
     if subcommand == "swe-bench":
         if args.result_analysis:
-            # do analysis and exit
             result_analysis.analyze(config.output_dir)
             exit(0)
 
+        logger.info("Loading SWE-bench tasks...")
         tasks = make_swe_tasks(
             args.task, args.task_list_file, args.setup_map, args.tasks_map
         )
+        logger.info(f"Loaded {len(tasks)} SWE-bench tasks.")
 
         config.only_eval_reproducer = args.eval_reproducer
-
         config.reproduce_and_review = args.reproduce_and_review
 
         groups = group_swe_tasks_by_env(tasks)
+        logger.info(f"Grouped tasks into {len(groups)} environments.")
+
         run_task_groups(groups, num_processes, organize_output=True)
+
     elif subcommand == "github-issue":
         setup_dir = args.setup_dir
         if setup_dir is not None:
             setup_dir = abspath(setup_dir)
 
+        logger.info(f"Running github issue: {args.task_id}")
         task = RawGithubTask(
             args.task_id,
             args.clone_link,
@@ -132,6 +147,7 @@ def main():
         )
         groups = {"github": [task]}
         run_task_groups(groups, num_processes)
+
     elif subcommand == "local-issue":
         local_repo = args.local_repo
         if local_repo is not None:
@@ -139,6 +155,8 @@ def main():
         issue_file = args.issue_file
         if issue_file is not None:
             issue_file = abspath(issue_file)
+
+        logger.info(f"Running local issue: {args.task_id}")
         task = RawLocalTask(
             args.task_id,
             local_repo,
@@ -146,9 +164,13 @@ def main():
         )
         groups = {"local": [task]}
         run_task_groups(groups, num_processes)
+
     elif subcommand == "extract-patches":
+        logger.info(f"Extracting patches from {args.experiment_dir}")
         extract_organize_and_form_input(args.experiment_dir)
+
     elif subcommand == "re-extract-patches":
+        logger.info(f"Re-extracting patches from {args.experiment_dir}")
         reextract_organize_and_form_inputs(args.experiment_dir)
 
 
@@ -347,6 +369,7 @@ def make_swe_tasks(
         task_info = tasks_map[task_id]
         task = RawSweTask(task_id, setup_info, task_info)
         all_tasks.append(task)
+    log
     return all_tasks
 
 
@@ -649,8 +672,9 @@ def dump_cost(
 
 if __name__ == "__main__":
     if platform.system() == "Darwin":
-        # Macos specific requirement for Multi-Processing
         set_start_method("fork", force=True)
     logging.getLogger("httpx").setLevel(logging.WARNING)
     logger.remove()
+    logger.add("autocoderover_debug.log", level="DEBUG")
     main()
+    

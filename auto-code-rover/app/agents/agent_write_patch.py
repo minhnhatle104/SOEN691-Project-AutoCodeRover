@@ -50,7 +50,7 @@ Return the patch in the format below.
 Within `<file></file>`, replace `...` with actual file path.
 Within `<original></original>`, replace `...` with the original code snippet from the program.
 Within `<patched></patched>`, replace `...` with the fixed version of the original code.
-When adding orignal code and updated code, pay attention to indentation, as the code is in Python.
+When adding orignal code and updated code, pay attention to indentation, as the code is in Java.
 You can write multiple modifications if needed.
 
 Example format:
@@ -74,7 +74,8 @@ Example format:
 ```
 NOTE:
 - In your patch, DO NOT include the line numbers at the beginning of each line!
-- Inside <original> and </original>, you should provide the original code snippet from the program.
+- Inside <original> and </original>, you MUST provide the exact original code from the program.
+- The match is case-sensitive and must preserve whitespace, indentation, and comments exactly as they appear in the Java file.
 This original code snippet MUST match exactly to a continuous block of code in the original program,
 since the system will use this to locate the code to be modified.
 """

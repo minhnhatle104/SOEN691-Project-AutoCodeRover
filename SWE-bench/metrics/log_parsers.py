@@ -141,6 +141,56 @@ def parse_log_sympy(log):
     return test_status_map
 
 
+# ================== Java Parsers ==================
+def parse_log_java_maven(log: str) -> dict:
+    """Parse Maven surefire test reports"""
+    test_status_map = {}
+    # Match failed tests pattern
+    for match in re.finditer(r"Tests run: .*?Failed:.*?\[(.*?)\]", log):
+        test_class = match.group(1)
+        test_status_map[test_class] = TestStatus.FAILED.value
+    
+    # Match individual test failures
+    for line in log.split("\n"):
+        if "FAILED" in line and "Test " in line:
+            test_name = line.split("Test ")[1].split()[0]
+            test_status_map[test_name] = TestStatus.FAILED.value
+    return test_status_map
+
+def parse_log_java_gradle(log: str) -> dict:
+    """Parse Gradle test reports"""
+    test_status_map = {}
+    test_pattern = re.compile(r"> ([\w.]+) (FAILED|PASSED)")
+    for line in log.split("\n"):
+        match = test_pattern.search(line)
+        if match:
+            test_name, status = match.groups()
+            test_status_map[test_name] = status
+    return test_status_map
+
+# ================== Parser Mapping ==================
+MAP_REPO_TO_PARSER = {
+    # Existing Python projects
+    "astropy/astropy": parse_log_pytest,
+    "django/django": parse_log_django,
+    "pytest-dev/pytest": parse_log_pytest,
+    
+    # Java projects
+    "apache__dubbo": parse_log_java_maven,
+    "fasterxml__jackson-databind": parse_log_java_maven,
+    "fasterxml__jackson-core": parse_log_java_maven,
+    "google__gson": parse_log_java_maven,
+    "fasterxml__jackson-dataformat-xml": parse_log_java_maven,
+    "googlecontainertools__jib": parse_log_java_gradle,
+    
+    # Other Python projects
+    "mwaskom/seaborn": lambda log: parse_log_pytest(log),
+    "sympy/sympy": lambda log: parse_log_pytest(log),
+    "pallets/flask": parse_log_pytest,
+    "psf/requests": parse_log_pytest,
+}
+
+# ================== Helper Assignments ==================
 parse_log_astroid = parse_log_pytest
 parse_log_flask = parse_log_pytest
 parse_log_marshmallow = parse_log_pytest
@@ -152,29 +202,3 @@ parse_log_pyvista = parse_log_pytest
 parse_log_requests = parse_log_pytest
 parse_log_sqlfluff = parse_log_pytest
 parse_log_xarray = parse_log_pytest
-
-parse_log_astropy = parse_log_pytest_v2
-parse_log_scikit = parse_log_pytest_v2
-parse_log_sphinx = parse_log_pytest_v2
-
-
-MAP_REPO_TO_PARSER = {
-    "astropy/astropy": parse_log_astropy,
-    "django/django": parse_log_django,
-    "marshmallow-code/marshmallow": parse_log_marshmallow,
-    "matplotlib/matplotlib": parse_log_matplotlib,
-    "mwaskom/seaborn": parse_log_seaborn,
-    "pallets/flask": parse_log_flask,
-    "psf/requests": parse_log_requests,
-    "pvlib/pvlib-python": parse_log_pvlib,
-    "pydata/xarray": parse_log_xarray,
-    "pydicom/pydicom": parse_log_pydicom,
-    "pylint-dev/astroid": parse_log_astroid,
-    "pylint-dev/pylint": parse_log_pylint,
-    "pytest-dev/pytest": parse_log_pytest,
-    "pyvista/pyvista": parse_log_pyvista,
-    "scikit-learn/scikit-learn": parse_log_scikit,
-    "sqlfluff/sqlfluff": parse_log_sqlfluff,
-    "sphinx-doc/sphinx": parse_log_sphinx,
-    "sympy/sympy": parse_log_sympy,
-}

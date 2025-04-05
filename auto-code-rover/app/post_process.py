@@ -444,63 +444,54 @@ def extract_swe_bench_input(dir: str):
     Returns:
         - path to swe-bench input file.
     """
-    # only look into applicable_patch dir, since we have already done
-    # the categorization
+    from app.model.common import SELECTED_MODEL  # Ensures model name used matches actual selection
+
     applicable_res_dir = pjoin(dir, "applicable_patch")
-    # figure out what tasks have applicable patch
     task_dirs = [
-        x
+        pjoin(applicable_res_dir, x)
         for x in os.listdir(applicable_res_dir)
         if os.path.isdir(pjoin(applicable_res_dir, x))
     ]
-    task_dirs = [pjoin(applicable_res_dir, x) for x in task_dirs]
-    patch_files = [pjoin(x, "agent_patch_raw") for x in task_dirs]
-    patch_files = [os.path.abspath(x) for x in patch_files]
-
-    # Diff files have the name extracted_patch_{1,2,3...}.diff
-    # We take the one with the largest index. This is because
-    # (1) if there is no validation, then there is at most one such file,
-    #     so just take it
-    # (2) if there is validation, only the one with the largest index may be correct
-    diff_files = []
-    for x in task_dirs:
-        selection_file = Path(x, "selected_patch.json")
-        if selection_file.is_file():
-            diff_file = pjoin(
-                x, json.loads(selection_file.read_text())["selected_patch"]
-            )
-        else:
-            _, diff_file = read_extract_status(x)
-        diff_files.append(diff_file)
-
-    diff_files = [os.path.abspath(x) for x in diff_files]
-
-    patch_files = [x for x in patch_files if os.path.isfile(x)]
-    diff_files = [x for x in diff_files if os.path.isfile(x)]
 
     all_results = []
-    for diff_file in diff_files:
-        task_dir = os.path.dirname(diff_file)
+    for task_dir in task_dirs:
+        # Get the best diff file
+        selection_file = Path(task_dir, "selected_patch.json")
+        if selection_file.is_file():
+            selected_patch = json.loads(selection_file.read_text()).get("selected_patch")
+            diff_file = pjoin(task_dir, selected_patch) if selected_patch else None
+        else:
+            best_status, diff_file = read_extract_status(task_dir)
+            if best_status != ExtractStatus.APPLICABLE_PATCH:
+                continue
+
+        if not diff_file or not os.path.isfile(diff_file):
+            continue
+
+        diff_content = Path(diff_file).read_text()
+        if not diff_content.strip():
+            continue
+
         meta_file = pjoin(task_dir, "meta.json")
+        if not os.path.isfile(meta_file):
+            continue
+
         with open(meta_file) as f:
             meta = json.load(f)
 
-        this_result = {
-            "instance_id": meta["task_id"],
-            "model_name_or_path": common.SELECTED_MODEL.name,
+        result = {
+            "instance_id": meta.get("task_id", ""),
+            "model_name_or_path": SELECTED_MODEL.name,
+            "model_patch": diff_content,
         }
-        diff_content = Path(diff_file).read_text()
-        if not diff_content:
-            # empty diff file, dont bother sending it to swe-bench
-            continue
-        this_result["model_patch"] = diff_content
-        all_results.append(this_result)
+        all_results.append(result)
 
     swe_input_file = pjoin(dir, "predictions_for_swebench.json")
     with open(swe_input_file, "w") as f:
         json.dump(all_results, f, indent=4)
 
     return swe_input_file
+
 
 
 def is_valid_json(json_str: str) -> tuple[ExtractStatus, list | dict | None]:

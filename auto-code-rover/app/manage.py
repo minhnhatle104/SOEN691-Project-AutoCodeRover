@@ -10,10 +10,12 @@ from app.agents import agent_reproducer
 from app.analysis import sbfl
 from app.analysis.sbfl import NoCoverageData
 from app.search.search_manage import SearchManager
+from loguru import logger
+
+
 
 # from app.api.python.validation import PythonValidator
 from app.task import Task
-
 
 class ProjectApiManager:
     def __init__(self, task: Task, output_dir: str):
@@ -28,6 +30,10 @@ class ProjectApiManager:
 
         # record layered API calls
         self.tool_call_layers: list[list[Mapping]] = []
+        
+        logger.info("🚀 Initialized ProjectApiManager for task: {}", task.task_id)
+        logger.info("📂 Project path: {}", task.project_path)
+        logger.info("📁 Output directory: {}", self.output_dir)
 
     ###################################################################
     ########################## API functions ##########################

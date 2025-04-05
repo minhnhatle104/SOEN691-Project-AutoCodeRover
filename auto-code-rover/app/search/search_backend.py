@@ -25,7 +25,7 @@ RESULT_SHOW_LIMIT = 3
 class SearchBackend:
     def __init__(self, project_path: str):
         self.project_path = project_path
-        # list of all files ending with .py, which are likely not test files
+        # list of all files ending with .java, which are likely not test files
         # These are all ABSOLUTE paths.
         self.parsed_files: list[str] = []
 
@@ -55,7 +55,7 @@ class SearchBackend:
         value is a list of tuples.
         This is for fast lookup whenever we receive a query.
         """
-        self._update_indices(*self._build_python_index(self.project_path))
+        self._update_indices(*self._build_java_index(self.project_path))
 
     def _update_indices(
         self,
@@ -73,7 +73,7 @@ class SearchBackend:
 
     @classmethod
     @cache
-    def _build_python_index(cls, project_path: str) -> tuple[
+    def _build_java_index(cls, project_path: str) -> tuple[
         ClassIndexType,
         ClassFuncIndexType,
         FuncIndexType,
@@ -85,30 +85,30 @@ class SearchBackend:
         function_index: FuncIndexType = defaultdict(list)
         class_relation_index: ClassRelationIndexType = defaultdict(list)
 
-        py_files = search_utils.find_python_files(project_path)
+        java_files = search_utils.find_java_files(project_path)
         # holds the parsable subset of all py files
-        parsed_py_files = []
-        for py_file in py_files:
-            file_info = search_utils.parse_python_file(py_file)
+        parsed_java_files = []
+        for java_file in java_files:
+            file_info = search_utils.parse_java_file(java_file)
             if file_info is None:
                 # parsing of this file failed
                 continue
-            parsed_py_files.append(py_file)
+            parsed_java_files.append(java_file)
             # extract from file info, and form search index
             classes, class_to_funcs, top_level_funcs, class_relation_map = file_info
 
             # (1) build class index
             for c, start, end in classes:
-                class_index[c].append((py_file, LineRange(start, end)))
+                class_index[c].append((java_file, LineRange(start, end)))
 
             # (2) build class-function index
             for c, class_funcs in class_to_funcs.items():
                 for f, start, end in class_funcs:
-                    class_func_index[c][f].append((py_file, LineRange(start, end)))
+                    class_func_index[c][f].append((java_file, LineRange(start, end)))
 
             # (3) build (top-level) function index
             for f, start, end in top_level_funcs:
-                function_index[f].append((py_file, LineRange(start, end)))
+                function_index[f].append((java_file, LineRange(start, end)))
 
             # (4) build class-superclass index
             for (c, start, end), super_classes in class_relation_map.items():
@@ -119,7 +119,7 @@ class SearchBackend:
             class_func_index,
             function_index,
             class_relation_index,
-            parsed_py_files,
+            parsed_java_files,
         )
 
     def _file_line_to_class_and_func(
@@ -212,7 +212,7 @@ class SearchBackend:
         result.extend(class_res)
         return result
 
-    def _get_candidate_matched_py_files(self, target_file_name: str):
+    def _get_candidate_matched_java_files(self, target_file_name: str):
         """
         Search for files in the project that may match target_file_name.
 
@@ -324,12 +324,12 @@ class SearchBackend:
 
         Args:
             class_name (string): Name of the class to search for.
-            file_name (string): The file to search in. Must be a valid python file name.
+            file_name (string): The file to search in. Must be a valid java file name.
         """
         search_res: list[SearchResult] = []
 
         # (1) check whether we can get the file
-        candidate_py_abs_paths = self._get_candidate_matched_py_files(file_name)
+        candidate_py_abs_paths = self._get_candidate_matched_java_files(file_name)
         if not candidate_py_abs_paths:
             tool_output = f"Could not find file {file_name} in the codebase."
             return tool_output, search_res, False
@@ -367,13 +367,13 @@ class SearchBackend:
 
         Args:
             method_name (string): Name of the method to search for.
-            file_name (string): The file to search in. Must be a valid python file name.
+            file_name (string): The file to search in. Must be a valid Java file name.
         """
         # (1) check whether we can get the file
         # supports both when file_name is relative to project root, and when
         # it is just a short name
-        candidate_py_abs_paths = self._get_candidate_matched_py_files(file_name)
-        # print(candidate_py_files)
+        candidate_py_abs_paths = self._get_candidate_matched_java_files(file_name)
+        # print(candidate_java_files)
         if not candidate_py_abs_paths:
             tool_output = f"Could not find file {file_name} in the codebase."
             return tool_output, [], False
@@ -536,18 +536,18 @@ class SearchBackend:
 
         Args:
             code_str (string): The code snippet to search for.
-            file_name (string): The file to search in. Must be a valid python file name in the project.
+            file_name (string): The file to search in. Must be a valid java file name in the project.
         """
         code_str = code_str.removesuffix(")")
 
-        candidate_py_files = [f for f in self.parsed_files if f.endswith(file_name)]
-        if not candidate_py_files:
+        candidate_java_files = [f for f in self.parsed_files if f.endswith(file_name)]
+        if not candidate_java_files:
             tool_output = f"Could not find file {file_name} in the codebase."
             return tool_output, [], False
 
         # start searching for code in the filtered files
         search_res: list[SearchResult] = []
-        for file_path in candidate_py_files:
+        for file_path in candidate_java_files:
             searched_line_and_code: list[tuple[int, str]] = (
                 search_utils.get_code_region_containing_code(file_path, code_str)
             )
@@ -597,11 +597,15 @@ class SearchBackend:
             window_size_str (str): The number of lines before and after the line number.
         """
         # we get argument as string
-        line_no = int(line_no_str)
-        window_size = int(window_size_str)
+        try:
+            line_no = int(line_no_str)
+            window_size = int(window_size_str)
+        except ValueError:
+            logger.error(f"Invalid line number or window size: {line_no_str}, {window_size_str}")
+            return f"Invalid input: {line_no_str}", [], False
 
         # (1) check whether we can get the file
-        candidate_py_abs_paths = self._get_candidate_matched_py_files(file_name)
+        candidate_py_abs_paths = self._get_candidate_matched_java_files(file_name)
         if not candidate_py_abs_paths:
             tool_output = f"Could not find file {file_name} in the codebase."
             return tool_output, [], False
@@ -661,15 +665,15 @@ class SearchBackend:
             - file_name: relevant path to the file.
         """
         # check whether we can get the file
-        candidate_py_files = [f for f in self.parsed_files if f.endswith(file_name)]
-        if not candidate_py_files:
+        candidate_java_files = [f for f in self.parsed_files if f.endswith(file_name)]
+        if not candidate_java_files:
             tool_output = f"Could not find file {file_name} in the codebase."
             return tool_output, [], False
 
         # NOTE: sometimes there can be multiple files.
         # To make the execution safe, we just take the first one
 
-        file_path = candidate_py_files[0]
+        file_path = candidate_java_files[0]
         file_content = Path(file_path).read_text()
 
         file_length = len(file_content.splitlines())
@@ -883,88 +887,4 @@ class SearchBackend:
 
 if __name__ == "__main__":
     pass
-    ## Test parsing of bug locations
-    # backend = SearchBackend("/media/media0/yuntong/SWE-bench/testbed/django__django/setup_django__django__3.0")
-    # bug_locations = [
-    #     {
-    #         "file": "django/conf/global_settings.py",
-    #         "class": "",
-    #         "method": ""
-    #     },
-    #     {
-    #         "file": "django/core/files/storage.py",
-    #         "class": "FileSystemStorage",
-    #         "method": "__init__"
-    #     },
-    #     {
-    #         "file": "django/core/files/storage.py",
-    #         "class": "FileSystemStorage",
-    #         "method": "_save"
-    #     },
-    #     {
-    #         "file": "tests/file_storage/tests.py",
-    #         "class": "",
-    #         "method": ""
-    #     }
-    # ]
-    # for bug_location in bug_locations:
-    #     print(backend.get_bug_loc_snippets(bug_location))
-
-    ## Test class inheritance index
-    # backend = SearchBackend(
-    #     "/media/media0/yuntong/SWE-bench/testbed/django__django/setup_django__django__4.0"
-    # )
-    # loc = {
-    #     "file": "django/db/models/fields/__init__.py",
-    #     "class": "AutoFieldMeta",
-    #     "method": "__subclasscheck__",
-    # }
-    # code = backend.get_bug_loc_snippets(loc)
-    # print(code)
-
-    # backend = SearchBackend("/media/media0/yuntong/SWE-bench/testbed/django__django/setup_django__django__3.0")
-
-    # locs = [
-    #     {
-    #         "file": "django/utils/autoreload.py",
-    #         "class": "StatReloader",
-    #         "method": "snapshot_files",
-    #         "intended_behavior": "The snapshot_files method should take a snapshot of the watched files and their modification times without encountering errors. Specifically, it should handle any file paths that contain unexpected null bytes gracefully, possibly by skipping such paths or logging a warning."
-    #     },
-    #     {
-    #         "file": "django/utils/autoreload.py",
-    #         "class": "StatReloader",
-    #         "method": "watched_files",
-    #         "intended_behavior": "The watched_files method should yield all files that need to be watched for changes without encountering errors. It should ensure that any file paths containing unexpected null bytes are handled gracefully, possibly by skipping such paths or logging a warning."
-    #     },
-    #     {
-    #         "file": "django/utils/autoreload.py",
-    #         "class": "StatReloader",
-    #         "method": "run_loop",
-    #         "intended_behavior": "The run_loop method should run the reloader loop, checking for file changes at regular intervals without encountering errors. It should ensure that any file paths containing unexpected null bytes are handled gracefully, possibly by skipping such paths or logging a warning."
-    #     }
-    # ]
-
-    # for loc in locs:
-    #     print(backend.get_bug_loc_snippets(loc))
-
-    # backend = SearchBackend(
-    #     "/media/media0/yuntong/SWE-bench/testbed/astropy__astropy/setup_astropy__astropy__1.3"
-    # )
-    # locs = [
-    #     {
-    #         "file": "astropy/wcs/wcs.py",
-    #         "class": "WCS",
-    #         "method": "_array_converter",
-    #         "intended_behavior": "The _array_converter method should handle empty input arrays gracefully and return empty arrays without raising an error. This ensures that when methods like wcs_pix2world are called with empty lists, they return empty lists/arrays instead of raising an InconsistentAxisTypesError.",
-    #     },
-    #     {
-    #         "file": "astropy/wcs/wcs.py",
-    #         "class": "WCS",
-    #         "method": "wcs_pix2world",
-    #         "intended_behavior": "The wcs_pix2world method should utilize the modified _array_converter method to ensure that when it is called with empty lists, it returns empty lists/arrays instead of raising an error. This preserves the existing functionality while handling edge cases of empty inputs.",
-    #     },
-    # ]
-
-    # for loc in locs:
-    #     print(backend.get_bug_loc_snippets(loc))
+    
