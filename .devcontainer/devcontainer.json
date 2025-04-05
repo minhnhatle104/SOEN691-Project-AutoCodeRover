@@ -1,0 +1,15 @@
+{
+  "name": "Python DevContainer",
+  "build": {
+    "dockerfile": "../auto-code-rover/Dockerfile.localdev"
+  },
+  "customizations": {
+    "jetbrains": {
+      "backend": "IntelliJ IDEA"
+    }
+  },
+  "remoteUser": "root",
+  "forwardPorts": [
+    8000
+  ]
+}

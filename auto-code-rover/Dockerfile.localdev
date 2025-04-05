@@ -13,11 +13,11 @@ RUN apt-get update && \
 ENV SDKMAN_DIR=/root/.sdkman
 RUN curl -s "https://get.sdkman.io" | bash && \
     bash -c "source $SDKMAN_DIR/bin/sdkman-init.sh && \
-             sdk install java 8.0.392-tem && \
-             sdk install java 11.0.21-tem && \
-             sdk install java 17.0.9-tem && \
-             sdk install java 21.0.1-tem && \
-             sdk default java 17.0.9-tem"
+    sdk install java 8.0.392-tem && \
+    sdk install java 11.0.21-tem && \
+    sdk install java 17.0.9-tem && \
+    sdk install java 21.0.1-tem && \
+    sdk default java 17.0.9-tem"
 
 # Make SDKMAN and Java available in all future shells
 RUN echo "source $SDKMAN_DIR/bin/sdkman-init.sh" >> /etc/profile && \
@@ -28,9 +28,3 @@ RUN bash -c "source $SDKMAN_DIR/bin/sdkman-init.sh && java -version"
 
 # Install Maven via SDKMAN
 RUN bash -c "source $SDKMAN_DIR/bin/sdkman-init.sh && sdk install maven"
-COPY . /opt/auto-code-rover
-
-ENV PYTHONPATH=/opt/auto-code-rover
-
-WORKDIR /opt/auto-code-rover
-RUN conda env create -f environment.yml
