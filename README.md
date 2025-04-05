@@ -60,3 +60,12 @@
     --run_id <run_id>
 ```
 
+## For development in the local
+
+Please use .devcontainer/devcontainer.json and run in IntelliJ (it requires Docker)
+In devcontainer.json, it will point to Dockerfile.localdev to run
+
+## For running in docker
+
+Using Dockerfile.minimal (the newest file to run)
+
