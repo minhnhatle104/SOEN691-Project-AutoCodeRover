@@ -402,58 +402,41 @@ class SweTask(Task):
     def execute_reproducer(
     self, test_content: str, patch_content: str | None = None
 ) -> ReproResult:
-        """Java-compatible reproducer executor"""
         cm = nullcontext() if patch_content is None else self.apply_patch(patch_content)
 
         with cm:
-            output_path = Path(self.project_path) / "Reproducer.java"
-            output_path.write_text(test_content)
+            java_file = Path(self.project_path) / "Reproducer.java"
+            java_file.write_text(test_content)
 
             try:
-                # 1. Compile the file
-                cp_compile = subprocess.run(
-                    ["javac", "Reproducer.java"],
+                cp = run_string_cmd_in_conda(
+                    f"javac Reproducer.java && java Reproducer",
                     cwd=self.project_path,
-                    capture_output=True,
                     text=True,
-                    timeout=60,
-                )
-                if cp_compile.returncode != 0:
-                    return ReproResult(
-                        stdout=cp_compile.stdout,
-                        stderr=f"[Compile Error]\n{cp_compile.stderr}",
-                        returncode=cp_compile.returncode,
-                    )
-
-                # 2. Run the compiled file
-                cp_run = subprocess.run(
-                    ["java", "Reproducer"],
-                    cwd=self.project_path,
                     capture_output=True,
-                    text=True,
-                    timeout=60,
+                    timeout=120,
+                    is_java=True,  # ensures no conda wrapping
                 )
-                cp_stdout = cp_run.stdout
-                cp_stderr = cp_run.stderr
-                cp_returncode = cp_run.returncode
-
+                cp_stdout = cp.stdout
+                cp_stderr = cp.stderr
+                cp_returncode = cp.returncode
             except subprocess.TimeoutExpired:
                 cp_stdout = ""
                 cp_stderr = "Test execution timeout."
                 cp_returncode = -1
 
-            # Optional: clean up the class file after run
-            class_file = Path(self.project_path) / "Reproducer.class"
-            if class_file.exists():
-                class_file.unlink()
+        # Optional cleanup
+        class_file = Path(self.project_path) / "Reproducer.class"
+        if class_file.exists():
+            class_file.unlink()
 
-        # Truncate long stderr
         stderr_result = str(cp_stderr)
         stderr_lines = stderr_result.splitlines()
         if len(stderr_lines) > 100:
             stderr_result = "\n".join(stderr_lines[:50] + ["..."] + stderr_lines[-50:])
 
         return ReproResult(cp_stdout, stderr_result, cp_returncode)
+
 
 
     def evaluate_reproducer(
