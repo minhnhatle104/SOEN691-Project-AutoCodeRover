@@ -5,7 +5,7 @@ import glob
 import shutil
 import datetime
 
-def write_log(message, log_file='automate/swe-batch.log'):
+def write_log(message, log_file='/home/user/SOEN691-Project-AutoCodeRover/SWE-agent/automate/swe-batch.log'):
     timestamp = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
     with open(log_file, 'a') as file:
         file.write(f'{timestamp} - {message}\n')
@@ -32,9 +32,8 @@ def run_sweagent(instance_id, env_repo_path, agent_model_name, output_dir):
         "--problem_statement.path", problem_statement_path,
         "--output_dir", output_dir
     ]
-    write_log(f'Finished SWE-Agent for {instance_id}')
-
     subprocess.run(command, check=True)
+    write_log(f'Finished SWE-Agent for {instance_id}')
 
     # Find the generated patch folder (assuming a randomly named directory is created inside `output_dir`)
     patch_folders = [d for d in os.listdir(output_dir) if os.path.isdir(os.path.join(output_dir, d))]
@@ -104,24 +103,30 @@ def swe_batch(json_path):
         # Navigate to the repo path
         if os.path.exists(repo_path):
             os.chdir(repo_path)
+                        
+            try:
+                # Checkout the base commit
+                subprocess.run(["git", "checkout", base_commit], check=True)
+                write_log(f'Git checkout')
+                # Save problem_statement as a Markdown file
+                problem_file = os.path.join(repo_path, "problem_statement.md")
+                with open(problem_file, "w") as f:
+                    f.write(problem_statement)
+                write_log(f'saved problem_statement.md')
+
+                # Run 'ls -la' to list files
+                run_sweagent(
+                    instance_id=instance_id,
+                    env_repo_path=repo_path,
+                    agent_model_name="gpt-4o-mini-2024-07-18",
+                    output_dir="/home/user/SOEN691-Project-AutoCodeRover/SWE-agent/automate"
+                )
+            except subprocess.CalledProcessError as e:
+                print(f"Error occurred: {e}")
+                write_log(f'Git checkout Error')
+                write_log(f'Skipped {instance_id}')
+                continue           
             
-            # Checkout the base commit
-            subprocess.run(["git", "checkout", base_commit], check=True)
-            write_log(f'Git checkout')
-
-            # Save problem_statement as a Markdown file
-            problem_file = os.path.join(repo_path, "problem_statement.md")
-            with open(problem_file, "w") as f:
-                f.write(problem_statement)
-            write_log(f'saved problem_statement.md')
-
-            # Run 'ls -la' to list files
-            run_sweagent(
-                instance_id=instance_id,
-                env_repo_path=repo_path,
-                agent_model_name="gpt-4o-mini-2024-07-18",
-                output_dir="automate"
-            )
         else:
             print(f"Error: Repository path '{repo_path}' for {top_key} does not exist.")
         write_log(f'End {instance_id}')
