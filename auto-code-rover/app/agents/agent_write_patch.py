@@ -23,55 +23,69 @@ from app.post_process import (
 from app.search.search_manage import SearchManager
 from app.task import Task
 
-SYSTEM_PROMPT = """You are a software developer maintaining a large Java project.
-You are working on an issue submitted to your project.
-The issue contains a description marked between <issue> and </issue>.
-Another developer has already collected code context related to the issue for you.
-Your task is to write a patch that resolves this issue.
-Do not make changes to test files or write tests; you are only interested in crafting a patch.
-REMEMBER:
-- You should only make minimal changes to the code to resolve the issue.
-- Your patch should preserve the program functionality as much as possible.
-- In your patch, DO NOT include the line numbers at the beginning of each line!
-- You are working with Java code. Pay close attention to:
-  - matching exact whitespace/indentation from the source file,
-  - preserving class/method structure,
-  - avoiding imports unless absolutely needed,
-  - generic types and exception safety.
+SYSTEM_PROMPT = """You are a Java software engineer fixing bugs using minimal and precise code edits.
+
+You receive:
+- A bug report between <issue> and </issue>
+- Relevant buggy Java code snippets
+
+Your task:
+- Write a patch that ONLY modifies the necessary parts of the buggy code.
+- DO NOT change test files or add test code.
+- DO NOT include helper functions unless absolutely required.
+
+⚠️ Patch rules:
+- Use proper Java syntax, modifiers, and imports
+- Match exact indentation, comments, and formatting of the original code
+- Avoid changing unrelated logic
+
+The correctness of your patch depends on your ability to match the <original> block perfectly from the source code. Validation will fail if there are formatting mismatches.
+
+Think carefully and write only what's needed to fix the bug.
 """
 
-USER_PROMPT_INIT = """Write a patch for the issue, based on the relevant Java code context.
-First explain your reasoning in 1-2 sentences.
-Then provide the patch in the specified format below.
+USER_PROMPT_INIT = """You are fixing a Java bug based on relevant code context.
+
+➡️ First, briefly explain your reasoning in 1–2 sentences.
+➡️ Then provide the patch using the exact format described below.
 
 Rules:
- - Modify only the necessary locations.
- - Pay attention to additional context if fixing there makes more sense.
- - You must exactly match the original snippet in formatting, indentation, and casing.
- - Avoid editing test files.
- - Do not include helper functions unless clearly necessary.
- - If you import anything, explain why.
+- ONLY change code that is required to resolve the issue.
+- Use additional context if the bug spans multiple locations.
+- DO NOT modify test files.
+- DO NOT add helper functions unless absolutely needed.
+- Use precise Java syntax, modifiers, and indentation.
+- If you add imports, explain clearly why they are required.
 
-Format:
+⚠️ Critical Formatting Rules:
+- The <original> block MUST be copied **verbatim** from the source file. This means:
+  - EXACT same indentation and whitespace.
+  - ALL modifiers (e.g., public static), comments, and annotations (e.g., @Override).
+  - Match line breaks and structure precisely.
+
+✅ Patch Format:
 
 # modification 1
+
 ```
-<file>...</file>
-<original>...</original>
-<patched>...</patched>
+<file>path/to/File.java</file><original> [EXACT original code snippet from source] </original><patched> [Your modified version of the above snippet] </patched>
 ```
 
 # modification 2
 ```
-<file>...</file>
-<original>...</original>
-<patched>...</patched>
+<file>...</file> <original>...</original> <patched>...</patched>
 ```
+❌ DO NOT:
+- Include line numbers.
+- Re-indent the code.
+- Omit modifiers or annotations.
+- Make unrelated code changes.
 
-NOTE:
-- DO NOT include line numbers.
-- The content in <original> MUST match the exact block of Java code in the source file.
-- Use correct syntax and formatting to ensure the patch applies successfully.
+✅ DO:
+- Focus only on bug-related edits.
+- Preserve existing style and structure.
+
+Your output will be parsed and applied programmatically. Any mismatch in the <original> block will cause the patch to be rejected. Pay careful attention.
 """
 
 PatchHandle: TypeAlias = str
@@ -173,7 +187,7 @@ class PatchAgent:
         prompt = "Here are the possible buggy locations collected by someone else. "
         prompt += "Each location contains the actual code snippet and the intended behavior of the code for resolving the issue.\n"
         prompt += BugLocation.multiple_locs_to_str_for_model(self.bug_locs)
-        prompt += "Note that you DO NOT NEED to modify every location; you should think what changes are necessary for resolving the issue, and only propose those modifications."
+        prompt += "Only modify the locations that are necessary, but consider related locations if fixing one depends on or affects the other. If multiple code locations are needed to fully resolve the issue, include all necessary edits."
         return prompt
 
     def _register_applicable_patch(self, response: str, diff_content: str) -> PatchHandle:
