@@ -5,14 +5,8 @@ Inspired by:
 https://github.com/gpt-engineer-org/gpt-engineer/blob/main/gpt_engineer/core/chat_to_files.py
 """
 
-"""
-Utility functions for parsing and applying the patch.
-
-Inspired by:
-https://github.com/gpt-engineer-org/gpt-engineer/blob/main/gpt_engineer/core/chat_to_files.py
-"""
-
 import re
+import difflib
 from dataclasses import dataclass
 from pprint import pformat
 from typing import TextIO
@@ -69,9 +63,8 @@ def apply_edit(edit: Edit, file_path: str) -> str | None:
     before_lines = edit.before.strip("\n").splitlines()
     after_lines = edit.after.strip("\n").splitlines()
 
-    # Normalize whitespace for matching
     def normalize(s):
-        return s.strip().replace(" ", "").replace("\t", "")
+        return re.sub(r"\s+", "", s)
 
     norm_before = [normalize(line) for line in before_lines]
 
@@ -88,9 +81,16 @@ def apply_edit(edit: Edit, file_path: str) -> str | None:
             print(f"✅ Patch applied to {file_path}")
             return file_path
 
-    print(f"❌ Could not apply patch to {file_path} - match not found")
-    print("🔍 Tried to match:")
-    print("\n".join(before_lines))
+    # Fuzzy fallback
+    joined_orig = "".join(orig_lines)
+    before_block = "\n".join(before_lines).strip()
+    match = difflib.get_close_matches(before_block, [joined_orig], n=1, cutoff=0.8)
+    if match:
+        print(f"⚠️ Fuzzy match found for: {file_path} but not applied")
+    else:
+        print(f"❌ Could not apply patch to {file_path} - match not found")
+        print("🔍 Tried to match:")
+        print("\n".join(before_lines))
     return None
 
 def lint_python_content(content: str) -> bool:

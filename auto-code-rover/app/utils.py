@@ -11,7 +11,6 @@ from os.path import dirname as pdirname
 from os.path import join as pjoin
 from pathlib import Path
 from subprocess import CalledProcessError
-
 from app.log import log_and_print, log_exception
 
 
@@ -136,43 +135,39 @@ def repo_clean_changes() -> None:
 
 def repo_reset_and_clean_checkout(commit_hash: str) -> None:
     """
-    Run commands to reset repo to the original commit state.
-    Cleans both the uncommited changes and the untracked files, and submodule changes.
-    Assumption: The current directory is the git repository.
+    Reset the repo to the original commit state.
+    Cleans uncommitted and untracked files, and resets submodules.
+    Ensures commit is fetched before checkout — compatible with Java projects.
     """
-    # NOTE: do these before `git reset`. This is because some of the removed files below
-    # may actually be in version control. So even if we deleted such files here, they
-    # will be brought back by `git reset`.
-    # Clean files that might be in .gitignore, but could have been created by previous runs
+
+    # Step 0: Clean up leftover files from previous runs
     if os.path.exists(".coverage"):
         os.remove(".coverage")
     if os.path.exists("tests/.coveragerc"):
         os.remove("tests/.coveragerc")
-    other_cov_files = glob.glob(".coverage.TSS.*", recursive=True)
-    for f in other_cov_files:
+    for f in glob.glob(".coverage.TSS.*", recursive=True):  # ✅ Corrected usage
         os.remove(f)
 
+    # Step 1: Fetch commit if missing (handles shallow clones)
+    try:
+        run_command(["git", "fetch", "--no-tags", "origin", commit_hash])
+    except Exception as e:
+        print(f"[WARN] Unable to fetch commit {commit_hash}: {e}")
+
+    # Step 2: Reset, clean, checkout
     reset_cmd = ["git", "reset", "--hard", commit_hash]
     clean_cmd = ["git", "clean", "-fd"]
     checkout_cmd = ["git", "checkout", commit_hash]
     run_command(reset_cmd, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
     run_command(clean_cmd, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-    # need to checkout before submodule init. Otherwise submodule may init to another version
     run_command(checkout_cmd, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
 
-    # this is a fail-safe combo to reset any changes to the submodule: first unbind all submodules
-    # and then make a fresh checkout of them.
-    # Reference: https://stackoverflow.com/questions/10906554/how-do-i-revert-my-changes-to-a-git-submodule
+    # Step 3: Submodule cleanup and reinitialization
     submodule_unbind_cmd = ["git", "submodule", "deinit", "-f", "."]
     submodule_init_cmd = ["git", "submodule", "update", "--init"]
-    run_command(
-        submodule_unbind_cmd,
-        stdout=subprocess.DEVNULL,
-        stderr=subprocess.DEVNULL,
-    )
-    run_command(
-        submodule_init_cmd, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL
-    )
+    run_command(submodule_unbind_cmd, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+    run_command(submodule_init_cmd, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+
 
 
 def run_script_in_conda(command: str, env_name: str = "", is_java: bool = False, **kwargs):

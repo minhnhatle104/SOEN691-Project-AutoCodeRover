@@ -221,21 +221,15 @@ def convert_response_to_diff(
 ) -> tuple[ExtractStatus, str, str]:
     patch_content = response
 
-    # (1) get the meta data for this task
-    # task_dir = os.path.dirname(raw_patch_file)
     meta_file = pjoin(task_dir, "meta.json")
     with open(meta_file) as f:
         meta = json.load(f)
 
     task_info = meta["task_info"]
     setup_info = meta["setup_info"]
-    repo_path = setup_info["repo_path"]  # the project dir
-    base_commit = task_info["base_commit"]  # the commit to checkout
+    repo_path = setup_info["repo_path"]
+    base_commit = task_info["base_commit"]
 
-    # if not os.path.isfile(raw_patch_file):
-    # return ExtractStatus.NO_PATCH, "No raw patch file is found."
-
-    # (2) try parsing the edits
     try:
         raw_edits = parse_edits(patch_content)
     except Exception as e:
@@ -245,7 +239,6 @@ def convert_response_to_diff(
             "",
         )
 
-    # filter out edits to test files
     edits = []
     for idx, edit in enumerate(raw_edits):
         if is_test_file(edit.filename):
@@ -256,36 +249,31 @@ def convert_response_to_diff(
     if not edits:
         return ExtractStatus.RAW_PATCH_BUT_UNPARSED, "No edits can be parsed.", ""
 
-    # (3) edit parsed. check whether it can match the original program
     with apputils.cd(repo_path):
         if standalone_mode:
-            # in special --extract-patch mode
             apputils.repo_reset_and_clean_checkout(base_commit)
         else:
-            # extracting patch in the write_patch loop
-            # we should not reset to base commit, because previous we created a new commit
-            # containing the test_patch content. We should just clean the changes until HEAD.
             apputils.repo_clean_changes()
-        # try to match and apply each edit
+
         unmatched_edit_indexes = []
         for idx, edit in enumerate(edits):
-            # NOTE: do not clean here, since we want to accumulate changes from all edits
             target_file = edit.filename
-            # find the target file. The model may only use the short name of the file,
-            # so we need to search for it here
             found_file = apputils.find_file(repo_path, target_file)
             if found_file is None:
                 unmatched_edit_indexes.append(idx)
                 continue
-            # try to apply this edit and update the actual file content
+
+            if not edit.before.strip():
+                logger.warning(f"Edit {idx} has empty original content — skipping.")
+                unmatched_edit_indexes.append(idx)
+                continue
+
             applied_file = apply_edit(edit, found_file)
             if applied_file is None:
                 unmatched_edit_indexes.append(idx)
                 continue
 
         if len(unmatched_edit_indexes) == len(edits):
-            # non of the edits can be matched
-            # there is obvious error, and we definitely cannot extract patch
             apputils.repo_clean_changes()
             return (
                 ExtractStatus.RAW_PATCH_BUT_UNMATCHED,
@@ -293,44 +281,27 @@ def convert_response_to_diff(
                 "",
             )
 
-        # let's have a message describing which edits can be matched
+        unmatched_msg = ""
         if unmatched_edit_indexes:
-            unmatched_msg = f"Edits number {','.join([str(x+1) for x in unmatched_edit_indexes])} cannot be matched to the original program. "
-        else:
-            unmatched_msg = ""
+            unmatched_msg = f"Edits {','.join([str(x+1) for x in unmatched_edit_indexes])} could not be matched. "
 
-        # at this point, at least some of the edits could be applied (some others may be unmatched)
-        # we first try to get the diff
-        diff = apputils.run_command(
-            ["git", "diff"], stdout=subprocess.PIPE
-        ).stdout.decode()
+        diff = apputils.run_command(["git", "diff"], stdout=subprocess.PIPE).stdout.decode()
 
-        # After extracting diff, we have nothing more to do in the actual code base
         apputils.repo_clean_changes()
 
-        if not diff:
-            # diff file is empty, meaning the patched program is the same as original
-            # effectively, there is no edits that matched and introduced a real diff
-            msg = (
-                unmatched_msg
-                + "The matched edits do not introduce any change to the codebase."
-            )
+        if not diff.strip():
+            msg = unmatched_msg + "Matched edits introduced no diff."
             return ExtractStatus.MATCHED_BUT_EMPTY_DIFF, msg, ""
 
         edits_with_empty_before = [
             str(idx + 1) for idx, edit in enumerate(edits) if not edit.before.strip()
         ]
         if edits_with_empty_before:
-            numbers = ", ".join(edits_with_empty_before)
-            msg = f"Please contain **non-whitespace** original code snippet in edits number {numbers}."
+            msg = f"Original block is empty in edits {', '.join(edits_with_empty_before)}. Provide exact Java snippet."
             return ExtractStatus.MATCHED_BUT_EMPTY_ORIGIN, msg, ""
 
-        # the edits resulted in a non-empty diff. We should at least save and return it
-        # with open(extracted_file, "w") as f:
-        # f.write(diff)
-
-        # if all edits are matched, the `unmatched_msg` is empty string
         return ExtractStatus.APPLICABLE_PATCH, unmatched_msg, diff
+
 
 
 def organize_experiment_results(expr_dir: str):
