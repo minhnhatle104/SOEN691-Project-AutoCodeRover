@@ -83,7 +83,7 @@ def run_sweagent(instance_id, env_repo_path, agent_model_name, output_dir):
 
 def swe_batch(json_path):
     # Load JSON data
-    write_log(f'Started SWE-Batch')
+    write_log(f'\nStarted SWE-Batch')
     with open(json_path, "r") as f:
         data = json.load(f)
     
@@ -99,39 +99,43 @@ def swe_batch(json_path):
         if not repo_path or not base_commit or not problem_statement:
             print(f"Skipping {top_key}: Missing required fields.")
             continue
-        
-        # Navigate to the repo path
-        if os.path.exists(repo_path):
-            os.chdir(repo_path)
-                        
-            try:
-                # Checkout the base commit
-                subprocess.run(["git", "checkout", base_commit], check=True)
-                write_log(f'Git checkout')
-                # Save problem_statement as a Markdown file
-                problem_file = os.path.join(repo_path, "problem_statement.md")
-                with open(problem_file, "w") as f:
-                    f.write(problem_statement)
-                write_log(f'saved problem_statement.md')
+        skip_issue = ["Issue_ID_1", "Issue_ID_2"]
 
-                # Run 'ls -la' to list files
-                run_sweagent(
-                    instance_id=instance_id,
-                    env_repo_path=repo_path,
-                    agent_model_name="gpt-4o-mini-2024-07-18",
-                    output_dir="/home/user/SOEN691-Project-AutoCodeRover/SWE-agent/automate"
-                )
-            except subprocess.CalledProcessError as e:
-                print(f"Error occurred: {e}")
-                write_log(f'Git checkout Error')
-                write_log(f'Skipped {instance_id}')
-                continue           
-            
+        if not instance_id in skip_issue:
+            # Navigate to the repo path
+            if os.path.exists(repo_path):
+                os.chdir(repo_path)
+                            
+                try:
+                    # Checkout the base commit
+                    subprocess.run(["git", "checkout", base_commit], check=True)
+                    write_log(f'Git checkout')
+                    # Save problem_statement as a Markdown file
+                    problem_file = os.path.join(repo_path, "problem_statement.md")
+                    with open(problem_file, "w") as f:
+                        f.write(problem_statement)
+                    write_log(f'saved problem_statement.md')
+
+                    # Run 'ls -la' to list files
+                    run_sweagent(
+                        instance_id=instance_id,
+                        env_repo_path=repo_path,
+                        agent_model_name="gpt-4o-mini-2024-07-18",
+                        output_dir="/home/user/SOEN691-Project-AutoCodeRover/SWE-agent/automate"
+                    )
+                except subprocess.CalledProcessError as e:
+                    print(f"Error occurred: {e}")
+                    write_log(f'Git checkout Error')
+                    write_log(f'Skipped {instance_id}')
+                    continue           
+                
+            else:
+                print(f"Error: Repository path '{repo_path}' for {top_key} does not exist.")
+            write_log(f'End {instance_id}')
         else:
-            print(f"Error: Repository path '{repo_path}' for {top_key} does not exist.")
-        write_log(f'End {instance_id}')
+            write_log(f'DidNotRun {instance_id}')
     write_log(f'Completed SWE-Batch')
 
 # Example usage:
 if __name__ == "__main__":
-    swe_batch("../SWE-bench/setup_result/full_map.json")
+    swe_batch("full_map.json")

@@ -33,4 +33,4 @@ def merge_json_files(file1_path, file2_path, output_path="output.json"):
     except Exception as e:
         print(f"Error: {e}")
 
-merge_json_files("../SWE-bench/setup_result/setup_map.json", "../SWE-bench/setup_result/tasks_map.json", "../SWE-bench/setup_result/full_map.json")
+merge_json_files("../SWE-bench/setup_result/setup_map.json", "../SWE-bench/setup_result/tasks_map.json", "full_map.json")
