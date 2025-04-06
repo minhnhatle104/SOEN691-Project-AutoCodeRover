@@ -5,14 +5,8 @@ Inspired by:
 https://github.com/gpt-engineer-org/gpt-engineer/blob/main/gpt_engineer/core/chat_to_files.py
 """
 
-"""
-Utility functions for parsing and applying the patch.
-
-Inspired by:
-https://github.com/gpt-engineer-org/gpt-engineer/blob/main/gpt_engineer/core/chat_to_files.py
-"""
-
 import re
+import difflib
 from dataclasses import dataclass
 from pprint import pformat
 from typing import TextIO
@@ -66,32 +60,31 @@ def apply_edit(edit: Edit, file_path: str) -> str | None:
         print(f"❌ File not found: {file_path}")
         return None
 
+    # Split original and patched blocks
     before_lines = edit.before.strip("\n").splitlines()
     after_lines = edit.after.strip("\n").splitlines()
 
-    # Normalize whitespace for matching
-    def normalize(s):
-        return s.strip().replace(" ", "").replace("\t", "")
-
-    norm_before = [normalize(line) for line in before_lines]
-
+    # Use strict match (no normalization, Java is whitespace-sensitive)
     for i in range(len(orig_lines) - len(before_lines) + 1):
-        window = [normalize(line) for line in orig_lines[i : i + len(before_lines)]]
-        if window == norm_before:
-            leading_indent = len(orig_lines[i]) - len(orig_lines[i].lstrip())
+        window = orig_lines[i : i + len(before_lines)]
+        if all(w_line.rstrip("\n") == b_line for w_line, b_line in zip(window, before_lines)):
+            # Match found — apply patch
+            leading_indent = len(window[0]) - len(window[0].lstrip())
             indented_after = [
-                (" " * leading_indent + l).rstrip() + "\n" if l.strip() else "\n"
-                for l in after_lines
+                (" " * leading_indent + line).rstrip() + "\n" if line.strip() else "\n"
+                for line in after_lines
             ]
             new_lines = orig_lines[:i] + indented_after + orig_lines[i + len(before_lines):]
             Path(file_path).write_text("".join(new_lines))
             print(f"✅ Patch applied to {file_path}")
             return file_path
 
-    print(f"❌ Could not apply patch to {file_path} - match not found")
-    print("🔍 Tried to match:")
-    print("\n".join(before_lines))
+    # If strict match failed — log and skip
+    print(f"❌ Patch NOT applied to {file_path} — no exact match found.")
+    print("🔍 Expected block (from <original>):\n" + "\n".join(before_lines))
+    print("📄 File content snippet:\n" + "".join(orig_lines[:30]))  # Optional preview
     return None
+
 
 def lint_python_content(content: str) -> bool:
     # For Java, we assume it's valid syntax and skip linting
