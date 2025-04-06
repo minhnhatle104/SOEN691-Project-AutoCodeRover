@@ -1,5 +1,3 @@
-# File: agent_write_patch.py
-# File: agent_write_patch.py
 import os
 from collections import defaultdict
 from collections.abc import Generator
@@ -188,3 +186,61 @@ class PatchAgent:
         self._diffs[handle] = diff_content
         self._history.append(handle)
         return handle
+
+def generator(
+    context_thread: MessageThread,
+    output_dir: str,
+) -> Generator[tuple[bool, str, str], str | None, None]:
+    messages = deepcopy(context_thread.messages)
+    new_thread: MessageThread = MessageThread(messages=messages)
+    new_thread = agent_common.replace_system_prompt(new_thread, SYSTEM_PROMPT)
+
+    new_thread.add_user(USER_PROMPT_INIT)
+    print_acr(USER_PROMPT_INIT, "patch generation")
+
+    index = 1
+    feedback: str | None = None
+
+    while True:
+        if feedback:
+            new_thread.add_user(feedback)
+            print_patch_generation(feedback, f"feedback {index}")
+
+        logger.info(f"Trying to write a patch. Try {index}.")
+        res_text, *_ = common.SELECTED_MODEL.call(new_thread.to_msg())
+
+        new_thread.add_model(res_text, tools=[])
+        print_patch_generation(res_text, f"try {index}")
+
+        raw_patch_file = pjoin(output_dir, f"agent_patch_raw_{index}")
+        Path(raw_patch_file).write_text(res_text)
+
+        debug_file = pjoin(output_dir, f"debug_agent_write_patch_{index}.json")
+        new_thread.save_to_file(debug_file)
+
+        with NamedTemporaryFile(prefix="extracted_patch-", suffix=".diff") as f:
+            extract_status, extract_msg = extract_diff_one_instance(
+                raw_patch_file, f.name
+            )
+            patch_content = Path(f.name).read_text()
+
+        record_extract_status(output_dir, extract_status)
+
+        if extract_status == ExtractStatus.APPLICABLE_PATCH:
+            print_acr(f"```diff\n{patch_content}\n```", "extracted patch")
+            feedback = yield True, "written an applicable patch", patch_content
+            if feedback is None:
+                return
+            else:
+                feedback = f"Your patch is invalid. {feedback}. Please try again:\n\n{USER_PROMPT_INIT}"
+        else:
+            feedback = yield False, "failed to write an applicable patch", ""
+            if feedback is None:
+                feedback = (
+                    "Your edit could not be applied to the program. "
+                    + extract_msg
+                    + " Please try again.\n\n"
+                    + USER_PROMPT_INIT
+                )
+
+        index += 1
