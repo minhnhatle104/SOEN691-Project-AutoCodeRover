@@ -131,6 +131,39 @@ sweagent run \
 ```
 - IDEA: During SWE-Bench Dataset preparation, we also extract the issue into a problem_statement.md in the same project directory
 
+```bash
+sweagent run \
+    --agent.model.name=gpt-4o-mini-2024-07-18 \
+    --env.repo.path "/home/user/SOEN691-Project-AutoCodeRover/SWE-bench/testbed/apache__dubbo/setup_apache__dubbo__0.1" \
+    --problem_statement.path="/home/user/SOEN691-Project-AutoCodeRover/SWE-bench/testbed/apache__dubbo/setup_apache__dubbo__0.1/problem_statement.md" \
+    --output_dir "automate"
+```
+Output
+```
+🤠 INFO     Trajectory saved to /home/user/SOEN691-Project-AutoCodeRover/SWE-agent/trajectories/user/anthropic_filemap__gpt-4o-mini-2024-07-18__t-0.00__p-1.00__c-3.00___6b97db/6b97db/6b97db.traj                 
+╭──────────────────────────── 🎉 Submission successful 🎉 ────────────────────────────╮
+│ SWE-agent has produced a patch that it believes will solve the issue you submitted! │
+│ Use the code snippet below to inspect or apply it!                                  │
+╰─────────────────────────────────────────────────────────────────────────────────────╯
+                                                                                                                                                                                                                   
+ # The patch has been saved to your local filesystem at:                                                                                                                                                           
+ PATCH_FILE_PATH='/home/user/SOEN691-Project-AutoCodeRover/SWE-agent/trajectories/user/anthropic_filemap__gpt-4o-mini-2024-07-18__t-0.00__p-1.00__c-3.00___6b97db/6b97db/6b97db.patch'                             
+ # Inspect it:                                                                                                                                                                                                     
+ cat "${PATCH_FILE_PATH}"                                                                                                                                                                                          
+ # Apply it to a local repository:                                                                                                                                                                                 
+ cd <your local repo root>                                                                                                                                                                                         
+ git apply "${PATCH_FILE_PATH}"                                                                                                                                                                                    
+                                                                                                                                                                                                                   
+🏃 INFO     Done                                                                                                                                                                                                   
+��� INFO   Beginning environment shutdown...                                                                                                                                                                       
+🦖 DEBUG    Ensuring deployment is stopped because object is deleted
+```
 
+### Final Automated Approach
+
+```bash
+python automate/mergejson.py # Prepare full_map.json
+python automate/swe-batch.py # Run SWE-Agent for all tasks
+```
 ## Step 3: Validating Patches (Multi-SWE-Bench)
 
